@@ -424,10 +424,15 @@
              return;
         }
         
+        // NUEVA LÓGICA: Determinar la duración del tour
+        const isHospedajeSelected = document.querySelector('[data-id="hospedaje"]').classList.contains('selected');
+        const tourDuration = isHospedajeSelected ? '2 días' : '1 día';
+
         printContent.innerHTML = `
             <h1 class="text-3xl md:text-4xl font-extrabold text-center text-gray-800 mb-6">
                 <i class="fas fa-suitcase-rolling text-purple-600 mr-3"></i> Tour Cultural
             </h1>
+            <h3 class="text-2xl font-bold text-gray-700 mb-4 mt-6">Duración del Tour: ${tourDuration}</h3>
             <h3 class="text-2xl font-bold text-gray-700 mb-4 mt-6">Número de personas: ${numPeople}</h3>
             <div class="space-y-2">
                 <div class="print-item">
@@ -496,6 +501,15 @@
         
         const quoteDetails = document.createElement('div');
         quoteDetails.className = 'space-y-4';
+        
+        // NUEVA LÓGICA: Determinar la duración del tour
+        const isHospedajeSelected = document.querySelector('[data-id="hospedaje"]').classList.contains('selected');
+        const tourDuration = isHospedajeSelected ? '2 días' : '1 día';
+
+        const tourDurationQuote = document.createElement('p');
+        tourDurationQuote.className = 'text-lg font-semibold';
+        tourDurationQuote.textContent = `Duración del Tour: ${tourDuration}`;
+        quoteDetails.appendChild(tourDurationQuote);
         
         const numPeopleQuote = document.createElement('p');
         numPeopleQuote.className = 'text-lg font-semibold';
