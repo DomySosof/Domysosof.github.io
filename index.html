@@ -1,29 +1,587 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Document</title>
-</head>
-<link rel="stylesheet" href="style.css">
-<body> 
-	<div id="chart">
-	<h1 \n > Bitcoin / USD </h1>
-	
-</body>
-<script src="/Lib/lightweight.js"></script>
-<!--  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>-->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Costos - Tour Cultural</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
 
-  <script type="text/javascript" src="aerospace.js"></script>
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #f44336;
+            --text-color: #333;
+            --bg-color: #eef2f5;
+            --card-bg: #ffffff;
+            --border-color: #ddd;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --focus-glow: rgba(76, 175, 80, 0.3);
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            min-height: 100vh;
+            box-sizing: border-box;
+            color: var(--text-color);
+        }
+        .container {
+            background-color: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px var(--shadow-color);
+            width: 100%;
+            max-width: 1400px;
+            display: flex;
+            flex-direction: column;
+            gap: 2.5rem;
+        }
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+        .main-grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            align-items: flex-start;
+        }
+        .section-box {
+            background-color: var(--bg-color);
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.05);
+        }
+        .section-box h2 {
+            text-align: center;
+            margin-top: 0;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0.8rem;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
+        .input-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 0.6rem;
+            color: var(--text-color);
+            font-weight: 700;
+            font-size: 1rem;
+        }
+        .input-group input[type="number"] {
+            width: 100%;
+            padding: 0.9rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-sizing: border-box;
+            background-color: var(--card-bg);
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+        .input-group input[type="number"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px var(--focus-glow);
+        }
+        .results-box h3 {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 1rem 0;
+            font-size: 1.1rem;
+        }
+        .results-box h3 span {
+            font-weight: normal;
+        }
+        .final-total {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        .hr-divider {
+            border: 0;
+            height: 1px;
+            background: var(--border-color);
+            margin: 2rem 0;
+        }
+        .calculated-value {
+            font-weight: 700;
+            color: #007bff;
+            font-size: 1.1rem;
+        }
+        .selected-services-container {
+            padding: 1.5rem;
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            margin-top: 2rem;
+        }
+        .selected-services-container h3 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+        .selected-services-container ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+        }
+        .selected-services-container li {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            font-size: 1rem;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+        .print-button {
+            display: block;
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #ffffff;
+            background-color: var(--primary-color);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            margin-top: 2rem;
+        }
+        .print-button:hover {
+            background-color: #43a047;
+            transform: translateY(-2px);
+        }
+
+        /* Estilos de impresión */
+        @media print {
+            body > *:not(.print-content) {
+                display: none !important;
+            }
+            body {
+                background: none;
+                padding: 0;
+                margin: 0;
+            }
+            .print-content {
+                display: block;
+                width: 100%;
+                padding: 1.5rem;
+                box-shadow: none;
+                border-radius: 0;
+            }
+            .section-box, .selected-services-container {
+                box-shadow: none;
+                background-color: transparent;
+                padding: 0;
+                margin-top: 1rem;
+            }
+            .container {
+                padding: 0;
+                box-shadow: none;
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Calculadora de Costos del Tour-Cultural</h1>
+
+    <div class="main-grid-container">
+        <div class="column-results">
+            <div class="section-box results-box">
+                <h2 id="resultsTitle">Resultados</h2>
+                <h3>Total Tour (con IVA): <span id="totalTourConIva" class="calculated-value final-total">Q0.00</span></h3>
+                <h3>Precio Sugerido (por persona): <span id="precioSugerido" class="calculated-value final-total">Q0.00</span></h3>
+                <hr class="hr-divider">
+                <h3>Total de Costos: <span id="totalCostos" class="calculated-value">Q0.00</span></h3>
+                <h3>IVA (12%): <span id="iva" class="calculated-value">Q0.00</span></h3>
+                <h3>ISR (5%): <span id="isr" class="calculated-value">Q0.00</span></h3>
+                <hr class="hr-divider">
+                <h3>Margen: <span id="margen" class="calculated-value">Q0.00</span></h3>
+            </div>
+            
+            <div class="selected-services-container">
+                <h3>Servicios Seleccionados</h3>
+                <ul id="selectedServicesList">
+                    </ul>
+            </div>
+        </div>
+
+        <div class="section-box">
+            <h2>Datos del Tour</h2>
+            <div class="input-group">
+                <label for="personas">Cantidad de Personas:</label>
+                <input type="number" id="personas" value="4" min="1">
+            </div>
+            <div class="input-group">
+                <label for="porcentajeGanancia">Porcentaje de Ganancia Deseada (%):</label>
+                <input type="number" id="porcentajeGanancia" value="15" min="0">
+            </div>
+        </div>
+
+        <div class="section-box">
+            <h2>Costos Variables por Persona</h2>
+            <div class="input-group">
+                <label for="desayuno">Desayuno (Q):</label>
+                <input type="number" id="desayuno" value="0">
+            </div>
+            <div class="input-group">
+                <label for="textiles">Teñido y textiles artesanales (Q):</label>
+                <input type="number" id="textiles" value="20">
+            </div>
+            <div class="input-group">
+                <label for="cerveza">Cerveza artesanal (Q):</label>
+                <input type="number" id="cerveza" value="35">
+            </div>
+            <div class="input-group">
+                <label for="gastronomia">Experiencia Gastronómica (Q):</label>
+                <input type="number" id="gastronomia" value="65">
+            </div>
+            <div class="input-group">
+                <label for="cena">Cena (Q):</label>
+                <input type="number" id="cena" value="0">
+            </div>
+            <div class="input-group">
+                <label for="cafe">Degustación de café (Q):</label>
+                <input type="number" id="cafe" value="25">
+            </div>
+            <div class="input-group">
+                <label for="hospedaje">Hospedaje (Q):</label>
+                <input type="number" id="hospedaje" value="0">
+            </div>
+            <div class="input-group">
+                <label for="plantasMedicinales">Tour de Plantas Medicinales (Q):</label>
+                <input type="number" id="plantasMedicinales" value="0">
+            </div>
+            <div class="input-group">
+                <label for="tourMaiz">Tour de Maíz (Q):</label>
+                <input type="number" id="tourMaiz" value="0">
+            </div>
+            <div class="input-group">
+                <label for="materiales">Entradas (Q):</label>
+                <input type="number" id="materiales" value="0">
+            </div>
+             <div class="input-group">
+                <label for="demostracionPintura">Demostración de pintura (Q):</label>
+                <input type="number" id="demostracionPintura" value="0">
+            </div>
+             <div class="input-group">
+                <label for="murales">Murales (Q):</label>
+                <input type="number" id="murales" value="0">
+            </div>
+             <div class="input-group">
+                <label for="cacao">Cacao (Q):</label>
+                <input type="number" id="cacao" value="0">
+            </div>
+             <div class="input-group">
+                <label for="miel">Miel (Q):</label>
+                <input type="number" id="miel" value="0">
+            </div>
+             <div class="input-group">
+                <label for="guiaLocalVariable">Guía Local (Q):</label>
+                <input type="number" id="guiaLocalVariable" value="0">
+            </div>
+             <div class="input-group">
+                <label for="transporteTerrestreVariable">Transporte terrestre (Q):</label>
+                <input type="number" id="transporteTerrestreVariable" value="0">
+            </div>
+        </div>
+        
+        <div class="section-box">
+            <h2>Costos Fijos</h2>
+            <div class="input-group">
+                <label for="guiaExtra">Guía Extra (Q):</label>
+                <input type="number" id="guiaExtra" value="300">
+            </div>
+            <div class="input-group">
+                <label for="transporteLacustre">Transporte (Q):</label>
+                <input type="number" id="transporteLacustre" value="400">
+            </div>
+            <div class="input-group">
+                <label for="transporteLacustre2">Transporte lacustre 2 (Q):</label>
+                <input type="number" id="transporteLacustre2" value="0">
+            </div>
+            <div class="input-group">
+                <label for="marimba">Marimba (Q):</label>
+                <input type="number" id="marimba" value="0">
+            </div>
+            <div class="input-group">
+                <label for="comisionPosRate">Comisión POS (%):</label>
+                <input type="number" id="comisionPosRate" value="0" min="0" step="0.1">
+            </div>
+            <div class="input-group">
+                <label for="almuerzoGuia">Costo de Almuerzo para Guías (Q):</label>
+                <input type="number" id="almuerzoGuia" value="65" min="0">
+            </div>
+            <div class="input-group">
+                <label for="costosFijosOperativos">Costo Fijos Operativos (Q):</label>
+                <input type="number" id="costosFijosOperativos" value="284.50" min="0">
+            </div>
+        </div>
+    </div>
+    <button class="print-button" onclick="printResults()">Imprimir Resultados</button>
 </div>
 
-	<br>
-	<a href="https://tmail.thehp.in/"\n >Correo Temporal</a>
-		<br>
-	<a href="https://sickw.com/ " \n >Sickw</a >
-		<br>
-	<a href="https://mempool.space/es/ " \n >Mempool</a >
-	
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const personasInput = document.getElementById('personas');
+        const porcentajeGananciaInput = document.getElementById('porcentajeGanancia');
+        
+        const guiaExtraInput = document.getElementById('guiaExtra');
+        const transporteLacustreInput = document.getElementById('transporteLacustre');
+        const transporteLacustre2Input = document.getElementById('transporteLacustre2');
+        const marimbaInput = document.getElementById('marimba');
+        const comisionPosRateInput = document.getElementById('comisionPosRate');
+        const almuerzoGuiaInput = document.getElementById('almuerzoGuia');
+        const costosFijosOperativosInput = document.getElementById('costosFijosOperativos');
+        
+        // Nuevos inputs variables
+        const desayunoInput = document.getElementById('desayuno');
+        const demostracionPinturaInput = document.getElementById('demostracionPintura');
+        const muralesInput = document.getElementById('murales');
+        const cacaoInput = document.getElementById('cacao');
+        const mielInput = document.getElementById('miel');
+        const guiaLocalVariableInput = document.getElementById('guiaLocalVariable');
+        const transporteTerrestreVariableInput = document.getElementById('transporteTerrestreVariable');
+
+
+        const selectedServicesList = document.getElementById('selectedServicesList');
+
+        const resultsTitle = document.getElementById('resultsTitle');
+        const totalTourConIvaSpan = document.getElementById('totalTourConIva');
+        const precioSugeridoSpan = document.getElementById('precioSugerido');
+        const totalCostosSpan = document.getElementById('totalCostos');
+        const ivaSpan = document.getElementById('iva');
+        const isrSpan = document.getElementById('isr');
+        const margenSpan = document.getElementById('margen');
+
+        // Mapeo de IDs de inputs a sus etiquetas para la lista de servicios
+        const allServices = {
+            variable: [
+                { id: 'desayuno', label: 'Desayuno' },
+                { id: 'textiles', label: 'Teñido y textiles artesanales' },
+                { id: 'cerveza', label: 'Cerveza artesanal' },
+                { id: 'gastronomia', label: 'Experiencia Gastronómica' },
+                { id: 'cena', label: 'Cena' },
+                { id: 'cafe', label: 'Degustación de café' },
+                { id: 'hospedaje', label: 'Hospedaje' },
+                { id: 'plantasMedicinales', label: 'Tour de Plantas Medicinales' },
+                { id: 'tourMaiz', label: 'Tour de Maíz' },
+                { id: 'materiales', label: 'Entradas' },
+                { id: 'demostracionPintura', label: 'Demostración de pintura' },
+                { id: 'murales', label: 'Murales' },
+                { id: 'cacao', label: 'Cacao' },
+                { id: 'miel', label: 'Miel' },
+                { id: 'guiaLocalVariable', label: 'Guía Local' },
+                { id: 'transporteTerrestreVariable', label: 'Transporte terrestre' }
+            ],
+            fixed: [
+                { id: 'guiaExtra', label: 'Guía Extra' },
+                { id: 'transporteLacustre', label: 'Transporte Lacustre 1' },
+                { id: 'transporteLacustre2', label: 'Transporte Lacustre 2' },
+                { id: 'marimba', label: 'Marimba' },
+                { id: 'almuerzoGuia', label: 'Almuerzo para Guías' },
+                { id: 'costosFijosOperativos', label: 'Costos Fijos Operativos' }
+            ]
+        };
+
+        function updateSelectedServicesList() {
+            let listHTML = '';
+            
+            // Recorrer costos variables
+            allServices.variable.forEach(service => {
+                const input = document.getElementById(service.id);
+                if (parseFloat(input.value) > 0) {
+                    listHTML += `<li>${service.label}</li>`;
+                }
+            });
+
+            // Recorrer costos fijos
+            allServices.fixed.forEach(service => {
+                const input = document.getElementById(service.id);
+                if (parseFloat(input.value) > 0) {
+                    listHTML += `<li>${service.label}</li>`;
+                }
+            });
+
+            selectedServicesList.innerHTML = listHTML;
+        }
+
+        function calculateAll() {
+            const personas = parseFloat(personasInput.value) || 0;
+            const porcentajeGanancia = parseFloat(porcentajeGananciaInput.value) || 0;
+            const comisionPosRate = parseFloat(comisionPosRateInput.value) || 0;
+            const costoAlmuerzoGuia = parseFloat(almuerzoGuiaInput.value) || 0;
+            const costosFijosOperativos = parseFloat(costosFijosOperativosInput.value) || 0;
+            
+            resultsTitle.textContent = `Resultados para ${personas} Personas`;
+
+            // Calcular costos fijos
+            const guiaExtra = parseFloat(guiaExtraInput.value) || 0;
+            const transporteLacustre = parseFloat(transporteLacustreInput.value) || 0;
+            const transporteLacustre2 = parseFloat(transporteLacustre2Input.value) || 0;
+            const marimba = parseFloat(marimbaInput.value) || 0;
+            const totalFijos = guiaExtra + transporteLacustre + transporteLacustre2 + marimba + costosFijosOperativos;
+
+            // Calcular costos variables
+            const desayuno = parseFloat(desayunoInput.value) || 0;
+            const materiales = parseFloat(document.getElementById('materiales').value) || 0;
+            const textiles = parseFloat(document.getElementById('textiles').value) || 0;
+            const cerveza = parseFloat(document.getElementById('cerveza').value) || 0;
+            const gastronomia = parseFloat(document.getElementById('gastronomia').value) || 0;
+            const cena = parseFloat(document.getElementById('cena').value) || 0;
+            const cafe = parseFloat(document.getElementById('cafe').value) || 0;
+            const hospedaje = parseFloat(document.getElementById('hospedaje').value) || 0;
+            const plantasMedicinales = parseFloat(document.getElementById('plantasMedicinales').value) || 0;
+            const tourMaiz = parseFloat(document.getElementById('tourMaiz').value) || 0;
+            
+            // Nuevos costos variables
+            const demostracionPintura = parseFloat(demostracionPinturaInput.value) || 0;
+            const murales = parseFloat(muralesInput.value) || 0;
+            const cacao = parseFloat(cacaoInput.value) || 0;
+            const miel = parseFloat(mielInput.value) || 0;
+            const guiaLocalVariable = parseFloat(guiaLocalVariableInput.value) || 0;
+            const transporteTerrestreVariable = parseFloat(transporteTerrestreVariableInput.value) || 0;
+            
+            const totalVariablePorPersona = desayuno + materiales + textiles + cerveza + gastronomia + cena + cafe + hospedaje + plantasMedicinales + tourMaiz + demostracionPintura + murales + cacao + miel + guiaLocalVariable + transporteTerrestreVariable;
+
+            let numeroGuias = 1;
+            if (personas > 10) {
+                numeroGuias = 2;
+            }
+            const costoAlmuerzosGuias = costoAlmuerzoGuia * numeroGuias;
+
+            const totalVariables = (totalVariablePorPersona * personas) + costoAlmuerzosGuias;
+            
+            const totalCostos = totalFijos + totalVariables;
+            totalCostosSpan.textContent = `Q${totalCostos.toFixed(2)}`;
+
+            const margen = totalCostos * (porcentajeGanancia / 100);
+            const baseImpuestos = totalCostos + margen;
+            const iva = baseImpuestos * (100 / 95) * 0.12;
+            const isr = baseImpuestos * (100 / 95) * 0.05;
+            const totalFacturar = baseImpuestos + iva + isr;
+            const precioSugerido = totalFacturar / personas;
+
+            const tipoDeCambio = 7.5;
+            const totalFacturarUSD = totalFacturar / tipoDeCambio;
+            const precioSugeridoUSD = precioSugerido / tipoDeCambio;
+
+
+            totalTourConIvaSpan.textContent = `Q${totalFacturar.toFixed(2)} ($${totalFacturarUSD.toFixed(2)})`;
+            precioSugeridoSpan.textContent = `Q${precioSugerido.toFixed(2)} ($${precioSugeridoUSD.toFixed(2)})`;
+            ivaSpan.textContent = `Q${iva.toFixed(2)}`;
+            isrSpan.textContent = `Q${isr.toFixed(2)}`;
+            margenSpan.textContent = `Q${margen.toFixed(2)}`;
+            
+            // Llamar a la función para actualizar la lista de servicios
+            updateSelectedServicesList();
+        }
+
+        function printResults() {
+            const resultsBox = document.querySelector('.results-box').outerHTML;
+            const servicesContainer = document.querySelector('.selected-services-container').outerHTML;
+            const contentToPrint = `
+                <!DOCTYPE html>
+                <html lang="es">
+                <head>
+                    <title>Resultados del Tour</title>
+                    <style>
+                        body { font-family: 'Roboto', sans-serif; padding: 2rem; color: #333; }
+                        .print-header { text-align: center; color: #4CAF50; }
+                        .results-box h2, .selected-services-container h3 {
+                            text-align: center;
+                            color: #4CAF50;
+                            border-bottom: 2px solid #ddd;
+                            padding-bottom: 0.8rem;
+                            margin-bottom: 1.5rem;
+                            font-size: 1.5rem;
+                        }
+                        .results-box h3 {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            margin: 1rem 0;
+                            font-size: 1.1rem;
+                        }
+                        .calculated-value {
+                            font-weight: 700;
+                            color: #007bff;
+                            font-size: 1.1rem;
+                        }
+                        .final-total {
+                            font-size: 1.8rem;
+                            font-weight: 700;
+                            color: #4CAF50;
+                        }
+                        .hr-divider {
+                            border: 0;
+                            height: 1px;
+                            background: #ddd;
+                            margin: 2rem 0;
+                        }
+                        .selected-services-container ul {
+                            list-style-type: none;
+                            padding: 0;
+                            margin: 0;
+                            display: flex;
+                            flex-wrap: wrap;
+                            gap: 1rem;
+                            justify-content: center;
+                        }
+                        .selected-services-container li {
+                            padding: 0.5rem 1rem;
+                            border: 1px solid #ddd;
+                            border-radius: 20px;
+                            font-size: 1rem;
+                            background-color: #eef2f5;
+                            color: #333;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="print-content">
+                        <h1 class="print-header">Tour Cultural</h1>
+                        ${resultsBox}
+                        ${servicesContainer}
+                    </div>
+                </body>
+                </html>
+            `;
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(contentToPrint);
+            printWindow.document.close();
+            printWindow.focus();
+            printWindow.print();
+        }
+
+        const allInputs = document.querySelectorAll('input[type="number"]');
+        allInputs.forEach(input => {
+            input.addEventListener('input', calculateAll);
+        });
+
+        calculateAll();
+        window.printResults = printResults; // Hacer la función accesible globalmente
+    });
+</script>
+
+</body>
 </html>
-
-
