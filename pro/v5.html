@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Calculadora Completa de Costo Laboral (Guatemala) — Neto → Bruto</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background:#f4f6f8; padding:18px; color:#111; }
+    .card { background:white; padding:20px; max-width:980px; margin:18px auto; border-radius:10px; box-shadow:0 8px 28px rgba(15,20,30,0.06); }
+    h1 { margin:0 0 8px 0; font-size:20px; }
+    label { display:block; margin-top:10px; font-weight:600; }
+    input { padding:8px 10px; border-radius:6px; border:1px solid #cfd8e3; width:220px; }
+    .row { display:flex; gap:12px; align-items:center; margin-top:8px; flex-wrap:wrap; }
+    table { width:100%; border-collapse:collapse; margin-top:18px; }
+    th, td { padding:10px 8px; border-bottom:1px solid #eef2f6; text-align:left; vertical-align:middle; }
+    th { background:#fbfdff; font-weight:700; }
+    .q { font-weight:800; }
+    button { padding:10px 14px; background:#0b69ff; color:white; border:0; border-radius:8px; cursor:pointer; margin-top:14px; }
+    .muted { color:#57606a; font-size:13px; }
+    .small { font-size:13px; color:#536676; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Calculadora Completa de Costo Laboral (Guatemala)</h1>
+
+    <div class="row">
+      <div>
+        <label>Salario neto deseado (Q)</label>
+        <input id="netoDeseado" type="number" value="0" />
+      </div>
+
+      <div>
+        <label>Fecha de inicio de labores</label>
+        <input id="startDate" type="date" />
+      </div>
+
+      <div>
+        <label>Bonificación incentivo (Q)</label>
+        <input id="incentive" type="number" value="250" />
+      </div>
+    </div>
+
+    <button id="calcBtn">Calcular</button>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Concepto</th>
+          <th>Mensual (Q)</th>
+          <th>Anual (Q)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Salario bruto necesario</strong></td><td id="baseM"></td><td id="baseA"></td></tr>
+        <tr><td>IGSS trabajador (4.83%)</td><td id="igssEmpM"></td><td id="igssEmpA"></td></tr>
+        <tr><td>ISR retenido</td><td id="isrM"></td><td id="isrA"></td></tr>
+        <tr><td><strong>Salario neto recibido</strong></td><td id="netoM" class="q"></td><td id="netoA" class="q"></td></tr>
+
+        <tr><td>Bonificación incentivo</td><td id="boniM"></td><td id="boniA"></td></tr>
+        <tr><td>Aguinaldo proporcional</td><td id="aguiM"></td><td id="aguiA"></td></tr>
+        <tr><td>Bono 14 proporcional</td><td id="b14M"></td><td id="b14A"></td></tr>
+
+        <tr><td>IGSS patronal (10.67%)</td><td id="igssPatM"></td><td id="igssPatA"></td></tr>
+        <tr><td>IRTRA (1%)</td><td id="irtraM"></td><td id="irtraA"></td></tr>
+        <tr><td>INTECAP (1%)</td><td id="intecapM"></td><td id="intecapA"></td></tr>
+
+        <tr><td><strong>Costo total para la empresa</strong></td><td id="totalM" class="q"></td><td id="totalA" class="q"></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+<script>
+const R = {
+  IGSS_PATRONAL: 0.1067,
+  IGSS_EMPLEADO: 0.0483,
+  IRTRA: 0.01,
+  INTECAP: 0.01,
+  ISR_DEDUCCION_ANUAL: 48000,
+  ISR_TRAMO1_BASE: 30000,
+  ISR_TRAMO1_RATE: 0.05,
+  ISR_TRAMO2_RATE: 0.07
+};
+
+function fmt(n){ return 'Q' + Number(n||0).toLocaleString('es-GT',{minimumFractionDigits:2}); }
+
+// ISR anual
+function isrAnual(annualBruto){
+  const base = Math.max(0, annualBruto - R.ISR_DEDUCCION_ANUAL);
+  if(base <= 0) return 0;
+  const tramo1 = Math.min(R.ISR_TRAMO1_BASE, base);
+  const resto = Math.max(0, base - R.ISR_TRAMO1_BASE);
+  return tramo1 * R.ISR_TRAMO1_RATE + resto * R.ISR_TRAMO2_RATE;
+}
+
+// Meses completos (método A)
+function mesesDesde(startDate, yearStart, yearEnd){
+  if(!startDate) return 12;
+  const sY = startDate.getFullYear();
+  const sM = startDate.getMonth()+1;
+
+  if(sY < yearStart) return 12;
+  if(sY > yearEnd) return 0;
+
+  const startMonth = (sY === yearStart) ? sM : 1;
+  return (12 - startMonth + 1);
+}
+
+function mesesAguinaldo(start){
+  const y = new Date().getFullYear();
+  return mesesDesde(start, y, y);
+}
+
+function mesesBono14(start){
+  const today = new Date();
+  const y = today.getFullYear();
+  let startPeriodY, endPeriodY;
+
+  if(today.getMonth()+1 >= 7){
+    startPeriodY = y;
+    endPeriodY = y+1;
+  } else {
+    startPeriodY = y-1;
+    endPeriodY = y;
+  }
+
+  if(!start) return 12;
+
+  const sy = start.getFullYear();
+  const sm = start.getMonth()+1;
+
+  // Si empezó antes del período → 12 meses
+  if(sy < startPeriodY || (sy === startPeriodY && sm <= 7)) return 12;
+
+  // Si empezó después de junio del período final → 0 meses
+  if(sy > endPeriodY || (sy === endPeriodY && sm > 6)) return 0;
+
+  // Cálculo normal
+  let startMonth = (sy === startPeriodY) ? sm : 7;
+  let endMonth = 6;
+  let diff = (12 - startMonth + 1) + endMonth;
+  return diff;
+}
+
+function brutoDesdeNeto(neto){
+  let b = neto;
+  for(let i=0;i<50;i++){
+    const igss = b * R.IGSS_EMPLEADO;
+    const isr = isrAnual(b*12)/12;
+    const calc = b - igss - isr;
+    b += (neto - calc)*0.7;
+  }
+  return b;
+}
+
+function calcular(){
+  const neto = parseFloat(document.getElementById('netoDeseado').value);
+  const startVal = document.getElementById('startDate').value;
+  const incentive = parseFloat(document.getElementById('incentive').value);
+  const start = startVal ? new Date(startVal) : null;
+
+  const bruto = brutoDesdeNeto(neto);
+
+  // Retenciones
+  const igssEmp = bruto * R.IGSS_EMPLEADO;
+  const isrMes = isrAnual(bruto*12) / 12;
+
+  // Meses trabajados
+  const mAguinaldo = mesesAguinaldo(start);
+  const mB14 = mesesBono14(start);
+
+  // Aguinaldo correcto
+  const aguiA = bruto * (mAguinaldo / 12);
+  const aguiM = aguiA / 12;
+
+  // Bono 14 correcto
+  const b14A = bruto * (mB14 / 12);
+  const b14M = b14A / 12;
+
+  // Patronal
+  const igssPat = bruto * R.IGSS_PATRONAL;
+  const irtra = bruto * R.IRTRA;
+  const intecap = bruto * R.INTECAP;
+
+  // Totales
+  const totalM = bruto + igssPat + irtra + intecap + aguiM + b14M + incentive;
+  const totalA = totalM * 12;
+
+  // Output
+  document.getElementById('baseM').textContent = fmt(bruto);
+  document.getElementById('baseA').textContent = fmt(bruto*12);
+  document.getElementById('igssEmpM').textContent = fmt(igssEmp);
+  document.getElementById('igssEmpA').textContent = fmt(igssEmp*12);
+  document.getElementById('isrM').textContent = fmt(isrMes);
+  document.getElementById('isrA').textContent = fmt(isrMes*12);
+  document.getElementById('netoM').textContent = fmt(neto);
+  document.getElementById('netoA').textContent = fmt(neto*12);
+
+  document.getElementById('boniM').textContent = fmt(incentive);
+  document.getElementById('boniA').textContent = fmt(incentive*12);
+
+  document.getElementById('aguiM').textContent = fmt(aguiM) + ` (${mAguinaldo} meses)`;
+  document.getElementById('aguiA').textContent = fmt(aguiA);
+
+  document.getElementById('b14M').textContent = fmt(b14M) + ` (${mB14} meses)`;
+  document.getElementById('b14A').textContent = fmt(b14A);
+
+  document.getElementById('igssPatM').textContent = fmt(igssPat);
+  document.getElementById('igssPatA').textContent = fmt(igssPat*12);
+  document.getElementById('irtraM').textContent = fmt(irtra);
+  document.getElementById('irtraA').textContent = fmt(irtra*12);
+  document.getElementById('intecapM').textContent = fmt(intecap);
+  document.getElementById('intecapA').textContent = fmt(intecap*12);
+
+  document.getElementById('totalM').textContent = fmt(totalM);
+  document.getElementById('totalA').textContent = fmt(totalA);
+}
+
+document.getElementById('calcBtn').addEventListener('click', calcular);
+
+// Default start date
+window.onload = () => {
+  const d = new Date();
+  d.setMonth(0); d.setDate(1);
+  document.getElementById('startDate').value = d.toISOString().slice(0,10);
+  calcular();
+};
+</script>
+</body>
+</html>

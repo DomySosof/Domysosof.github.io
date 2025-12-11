@@ -1,0 +1,102 @@
+/* Configuración Global y Tipografía */
+:root {
+    --primary-color: #3b82f6; /* Azul brillante */
+    --primary-dark: #1e40af;
+    --background-color: #f3f4f6; /* Fondo gris claro */
+    --card-color: #ffffff; /* Color de la tarjeta/botón */
+    --shadow-light: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    --shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: var(--background-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    color: #374151; /* Color de texto oscuro */
+}
+
+/* Contenedor Principal */
+.container {
+    max-width: 1200px;
+    width: 90%;
+    padding: 40px;
+    text-align: center;
+}
+
+h1 {
+    color: var(--primary-dark);
+    margin-bottom: 10px;
+    font-size: 2.5rem;
+}
+
+p {
+    margin-bottom: 30px;
+    font-size: 1.1rem;
+    color: #6b7280;
+}
+
+/* Grid de Botones */
+.button-grid {
+    display: grid;
+    /* 3 columnas para pantallas grandes, 2 para medianas, 1 para móviles */
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+/* Estilo del Botón Interactivo */
+.interactive-button {
+    text-decoration: none; /* Quita el subrayado del enlace */
+    background-color: var(--card-color);
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: left;
+    transition: all 0.3s ease; /* Transición suave para todos los efectos */
+    box-shadow: var(--shadow-light);
+    cursor: pointer;
+}
+
+/* Efectos de Interacción (UX Moderno) */
+.interactive-button:hover {
+    transform: translateY(-5px); /* Elevación sutil */
+    box-shadow: var(--shadow-hover); /* Sombra más pronunciada */
+    background-color: #eff6ff; /* Fondo ligeramente azulado */
+    border-color: var(--primary-color);
+}
+
+.interactive-button:active {
+    transform: translateY(0); /* Simula un 'click' presionando */
+    box-shadow: var(--shadow-light);
+    background-color: var(--primary-color);
+    color: var(--card-color);
+}
+
+/* Estilo del Texto del Botón */
+.button-text {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: inherit; /* Hereda el color del padre (para cambiarlo en :active) */
+}
+
+/* Estilo del Icono */
+.button-icon {
+    font-size: 1.5rem;
+    transition: transform 0.3s ease;
+}
+
+/* Rotación sutil del icono al pasar el mouse */
+.interactive-button:hover .button-icon {
+    transform: rotate(10deg) scale(1.1);
+}
