@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard Financiero Interactivo</title>
+    <style>
+        /* ======================================= */
+        /* == 1. Estilos CSS (Dashboard) ========= */
+        /* ======================================= */
+        
+        body { 
+            font-family: 'Arial', sans-serif; 
+            display: flex; 
+            justify-content: space-around; 
+            padding: 30px; 
+            background-color: #f8f9fa;
+        }
+        
+        .container { 
+            width: 45%; 
+            padding: 20px; 
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background-color: white;
+            margin-bottom: 20px;
+        }
+        
+        h2 { 
+            color: #007bff; 
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 5px;
+            margin-top: 0;
+        }
+
+        /* ********************************************************* */
+        /* ** DISEÑO DE CUADRÍCULA COMPACTA ** */
+        /* ********************************************************* */
+        
+        .activity-section {
+            margin-bottom: 15px; 
+            padding: 5px; 
+            border: 1px solid #ccc;
+            border-radius: 8px; 
+            background-color: #e2f0ff; 
+        }
+        
+        .activity-section h3 {
+            margin-top: 0;
+            margin-bottom: 10px; 
+            color: #007bff;
+            font-size: 1.1em; 
+            border-bottom: 1px solid #007bff;
+            padding-bottom: 5px;
+        }
+        
+        .activity-section > div:not(h3):not(p) { 
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); 
+            gap: 8px; 
+        }
+
+        .activity-item { 
+            background-color: #e9ecef; 
+            padding: 10px; 
+            border-left: 5px solid #28a745; 
+            cursor: grab; 
+            border-radius: 6px;
+            position: relative;
+            font-size: 0.85em; 
+            min-height: 40px; 
+            display: flex; 
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            transition: transform 0.1s;
+        }
+        
+        /* Estilos específicos para la zona de suelta (mantener lista vertical) */
+        #drop-zone {
+            display: flex;
+            flex-direction: column; 
+            gap: 5px;
+            padding: 10px;
+            min-height: 150px; 
+            border: 3px dashed #007bff; 
+            text-align: center;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            background-color: #f0f8ff;
+        }
+        
+        /* Ítems dentro de la zona de suelta deben ser de ancho completo y estilo de lista */
+        #drop-zone .activity-item {
+            width: auto;
+            text-align: left;
+            border-left: 8px solid #dc3545; 
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 15px; 
+            cursor: move; 
+        }
+
+        /* Clases de Dragging para el reordenamiento */
+        .dragging {
+            opacity: 0.4;
+        }
+
+        .drag-over {
+            border-top: 3px solid #ffc107; 
+        }
+        
+        /* ********************************************************* */
+
+        .remove-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            line-height: 18px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+            flex-shrink: 0; 
+        }
+
+        #total-container { 
+            background-color: #28a745; 
+            color: white; 
+            padding: 15px; 
+            text-align: center; 
+            font-size: 1.5em;
+            font-weight: bold;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        
+        #finance-breakdown {
+            margin-top: 20px;
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 0.9em;
+        }
+        
+        #finance-breakdown td, #finance-breakdown th {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        #finance-breakdown th {
+            background-color: #f2f2f2;
+            color: #333;
+            border-top: 2px solid #ccc;
+        }
+        
+        .total-row td {
+            font-weight: bold;
+            background-color: #ffeeba;
+        }
+        
+        .total-row-highlight td {
+            font-weight: bold;
+            background-color: #d1ecf1; 
+            color: #0c5460;
+            border-top: 1px solid #c3e6cb;
+        }
+        
+        /* ESTILOS ESPECÍFICOS PARA LAS FILAS DINÁMICAS */
+        .extra-fixed-cost-row td {
+            color: #9d7d00; 
+            font-weight: bold;
+            font-style: italic;
+        }
+        .projected-income-row td {
+            color: #28a745; 
+            font-weight: bold;
+            background-color: #e6f7e9; 
+        }
+        /* ******************************************* */
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .button-group button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.0em;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        #generate-quote-btn {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        #generate-control-btn {
+            background-color: #ffc107;
+            color: #333;
+        }
+        
+        #people-input-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+        }
+        
+        /* NUEVOS ESTILOS PARA CAMPOS INTERACTIVOS */
+        #financial-parameters-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 15px;
+            background-color: #f8f9fa; 
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .param-input {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            width: 48%; /* Para mantenerlos separados */
+        }
+        
+        #num-people, #fixed-cost-pct, #income-margin-pct {
+            padding: 8px;
+            width: 100%;
+            max-width: 150px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1em;
+            text-align: center;
+            box-sizing: border-box;
+            align-self: flex-end;
+        }
+        .param-input label {
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        /* FIN DE NUEVOS ESTILOS */
+
+        /* ** Estilos para el Modal y la Impresión ** */
+        .modal {
+            display: none; 
+            position: fixed;
+            z-index: 10; 
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4); 
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto; 
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%; 
+            border-radius: 10px;
+        }
+
+        .close-btn {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        
+        /* Tabla de Control/Cotización */
+        #control-table, #quote-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        #control-table th, #control-table td, #quote-table th, #quote-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        #control-table th, #quote-table th {
+            background-color: #f2f2f2;
+        }
+        .finance-summary-box {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #007bff;
+            border-radius: 8px;
+            background-color: #e2f0ff;
+        }
+        .finance-summary-box p {
+            margin: 5px 0;
+            font-size: 0.95em;
+        }
+        .final-total-print {
+            font-size: 1.2em;
+            color: #dc3545;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        /* ESTILOS DE IMPRESIÓN - Solucionan el error */
+        @media print {
+            body > * { 
+                visibility: hidden; 
+                display: none;
+            }
+            .modal.active-print { 
+                visibility: visible; 
+                display: block;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: auto;
+                background-color: transparent;
+                padding: 0;
+                margin: 0;
+            }
+            .modal.active-print .modal-content {
+                width: 95%; 
+                margin: 10px auto;
+                border: none;
+                box-shadow: none;
+                padding: 0;
+            }
+            .modal-content .close-btn, .modal-content .print-button-in-modal { 
+                display: none !important; 
+            }
+            /* Fuerza colores y fondo en las filas dinámicas para impresión */
+            .projected-income-row td { 
+                background-color: #d1ecf1 !important; 
+                color: #28a745 !important; 
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact;
+            }
+             .extra-fixed-cost-row td {
+                color: #9d7d00 !important;
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact;
+            }
+            .quote-total-row td {
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="pending-list-container">
+        <h2>📋 Lista de Actividades Pendientes</h2>
+        <p>Arrastra los ítems a la derecha para sumarlos. (El precio base es por persona, excepto Guía).</p>
+        
+        <div class="activity-section" id="section-transporte">
+            <h3>TRANSPORTE 🚌</h3>
+            <div>
+                <div class="activity-item" draggable="true" data-value="800" data-type="fixed">Transporte lacustre (Q800)</div>
+                <div class="activity-item" draggable="true" data-value="1500" data-type="fixed">Guatemala a San Juan (Solo Ida) (Q1500)</div>
+                <div class="activity-item" draggable="true" data-value="2700" data-type="fixed">Guatemala a San Juan (Ida y Vuelta) (Q2700)</div>
+                <div class="activity-item" draggable="true" data-value="0" data-type="fixed">Transporte público (Q0)</div>
+                <div class="activity-item" draggable="true" data-value="20" data-type="person">Transporte Terrestre (Q20)</div>
+            </div>
+        </div>
+
+        <div class="activity-section" id="section-guia">
+            <h3>GUÍA 🧑‍💼</h3>
+            <div>
+                <div class="activity-item" draggable="true" data-value="300" data-type="guide-base">Guía local BASE (Q300)</div>
+                <div class="activity-item" draggable="true" data-value="200" data-type="guide-base">Guía (Q200)</div>
+            </div>
+        </div>
+        
+        <div class="activity-section" id="section-alimentacion">
+            <h3>ALIMENTACIÓN 🍽️</h3>
+            <div>
+                <div class="activity-item" draggable="true" data-value="65" data-type="person">Experiencia Gastronómica (Q60)</div>
+                <div class="activity-item" draggable="true" data-value="120" data-type="person">Cena Especial (Q120)</div>
+            </div>
+        </div>
+
+        <div class="activity-section" id="section-hospedaje">
+            <h3>HOSPEDAJE 🏨</h3>
+            <div>
+                <p style="font-size: 0.9em; color: #777; margin: 0; grid-column: 1 / -1; text-align: center;">Añade ítems de hospedaje aquí.</p>
+            </div>
+        </div>
+
+        <div class="activity-section" id="section-experiencias">
+            <h3>EXPERIENCIAS (TOURS) 🎭</h3>
+            <div>
+                <div class="activity-item" draggable="true" data-value="0" data-type="person">Tour de Cerveza Artesanal (Q0)</div>
+                <div class="activity-item" draggable="true" data-value="0" data-type="person">Demostración de textiles y tintes naturalez(Q0)</div>
+                <div class="activity-item" draggable="true" data-value="75" data-type="person">Taller de Arte en Óleo (Q75)</div>
+                <div class="activity-item" draggable="true" data-value="0" data-type="person"> visita a galeria de arte (Q0)</div>
+                <div class="activity-item" draggable="true" data-value="25" data-type="person">Degustación de Café (Q25)</div>
+                <div class="activity-item" draggable="true" data-value="25" data-type="person">Degustación de Chocolate (Q25)</div>
+                <div class="activity-item" draggable="true" data-value="25" data-type="person">Degustación de Té (Q25)</div>
+                <div class="activity-item" draggable="true" data-value="50"  data-type="person">Mercado (Q50)</div>
+                <div class="activity-item" draggable="true" data-value="0" data-type="fixed">Tour de Abeja sin Aguijón (Q0)</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <h2>💰 Desglose Financiero y Suma</h2>
+        
+        <div id="people-input-group">
+            <label for="num-people">Cantidad de Personas:</label>
+            <input type="number" id="num-people" value="1" min="1" step="1">
+        </div>
+        
+        <div id="financial-parameters-group">
+            <div class="param-input">
+                <label for="fixed-cost-pct">Uso de Costo Fijo (%):</label>
+                <input type="number" id="fixed-cost-pct" value="0" min="0" step="1" max="100">
+            </div>
+            <div class="param-input">
+                <label for="income-margin-pct">Margen Utilidad (%):</label>
+                <input type="number" id="income-margin-pct" value="10" min="0" step="1" max="100">
+            </div>
+        </div>
+        <div id="drop-zone">
+            <p id="drop-placeholder" style="padding-top: 50px; color: #007bff;">**Suelta aquí las actividades para sumarlas... (Reordena arrastrando)**</p>
+        </div>
+
+        <div id="total-container">
+            Subtotal (Base Imponible + Utilidad): Q<span id="current-total">0.00</span>
+        </div>
+        
+        <table id="finance-breakdown">
+            <thead>
+                <tr>
+                    <th>Concepto</th>
+                    <th style="text-align: right;">Monto (Q)</th>
+                </tr>
+            </thead>
+            <tbody id="finance-breakdown-body">
+                <tr id="activity-subtotal-row">
+                    <td>Subtotal Actividades x Personas y Fijas</td>
+                    <td id="subtotal-activities-display" style="text-align: right;">0.00</td>
+                </tr>
+                <tr id="guide-cost-row">
+                    <td>Costo Fijo de Guías (x <span id="num-guides-display">0</span>)</td>
+                    <td id="subtotal-guides-display" style="text-align: right;">0.00</td>
+                </tr>
+                <tr class="total-row" id="subtotal-base-row">
+                    <td>**SUBTOTAL BASE (TOTAL - Base Imponible para Taxes)**</td>
+                    <td id="subtotal-base-display" style="text-align: right;">0.00</td>
+                </tr>
+                
+                <tr id="base-calc-row">
+                    <td>Base Cálculo (Subtotal * 100/95)</td>
+                    <td id="base-calc-display" style="text-align: right;">0.00</td>
+                </tr>
+                <tr>
+                    <td>(+) IVA (12%)</td>
+                    <td id="iva-display" style="text-align: right;">0.00</td>
+                </tr>
+                <tr>
+                    <td>(+) ISR (5%)</td>
+                    <td id="isr-display" style="text-align: right;">0.00</td>
+                </tr>
+                <tr class="total-row-highlight">
+                    <td>**PAGO TOTAL POR PERSONA (Factura / # P.)**</td>
+                    <td id="invoice-total-per-person-display" style="text-align: right;">**0.00**</td>
+                </tr>
+                <tr class="total-row">
+                    <td>**TOTAL DE FACTURA**</td>
+                    <td id="invoice-total-display" style="text-align: right;">**0.00**</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div class="button-group">
+            <button id="generate-quote-btn">Generar Cotización (Imprimir)</button>
+            <button id="generate-control-btn">Imprimir Hoja de Control</button>
+        </div>
+    </div>
+
+    <div id="quoteModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <div id="header-print" contenteditable="true">
+                <h2> Atitur R.L</h2>
+                <p> 2 avenida, 6-022, Zona 2, San Juan La Laguna, Sololá | Tel: (502) 3378-4295  </p>
+                <p> Correo: infoatitur@gmail.com | NIT: 120402904   </p>
+            </div>
+            <div id="quote-summary">
+            </div>
+            <div id="quote-footer-print" contenteditable="true">
+                <p>Esta cotización es válida por 10 días y está sujeta a la disponibilidad de los servicios.</p>
+                <p>Gracias por preferir nuestros servicios.</p>
+            </div>
+            <button onclick="window.print()" class="print-button-in-modal" style="display: block; width: 100%; padding: 10px; margin-top: 15px;">Imprimir Ahora</button>
+        </div>
+    </div>
+    
+    <div id="controlModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn control-close-btn">&times;</span>
+            <div id="control-header-print" contenteditable="true">
+                <h2>Atitur R.L</h2>
+                <p> 2 avenida, 6-022, zona 2,SAN JUAN LA LAGUNA, SOLOLÁ Tel: (502) 3378-4295  </p>
+            <!--    <p>Fecha: ${new Date().toLocaleDateString('es-GT')}</p>-->
+            </div>
+            <div id="control-summary">
+            </div>
+            <div id="control-footer-print" contenteditable="true">
+                <p>Este documento es para uso interno y detalla el desglose base del precio.</p>
+               <!-- <p>Realizado por: [Nombre del Usuario]</p>-->
+            </div>
+            <button onclick="window.print()" class="print-button-in-modal" style="display: block; width: 100%; padding: 10px; margin-top: 15px;">Imprimir Ahora</button>
+        </div>
+    </div>
+
+    <script>
+        // ======================================================
+        // == PARÁMETROS DEL BACK-END (Costo Fijo y Utilidad) ===
+        // ======================================================
+        const BASE_FIXED_COST = 30000;      // Costo fijo base (Q30,000.00)
+        const GUIDE_BASE_COST = 300;        // Costo fijo base de un guía para usar en el cálculo
+        // ======================================================
+
+        // 1. Obtener elementos clave del DOM
+        const pendingListContainer = document.getElementById('pending-list-container');
+        const dropZone = document.getElementById('drop-zone');
+        const placeholder = document.getElementById('drop-placeholder');
+        
+        // Elemento de Personas y NUEVOS CAMPOS INTERACTIVOS
+        const numPeopleInput = document.getElementById('num-people');
+        const fixedCostPctInput = document.getElementById('fixed-cost-pct');
+        const incomeMarginPctInput = document.getElementById('income-margin-pct');
+
+        let numPeople = parseInt(numPeopleInput.value); 
+        
+        // Elementos para el desglose financiero
+        const subtotalBaseDisplay = document.getElementById('subtotal-base-display');
+        const subtotalActivitiesDisplay = document.getElementById('subtotal-activities-display');
+        const subtotalGuidesDisplay = document.getElementById('subtotal-guides-display');
+        const numGuidesDisplay = document.getElementById('num-guides-display');
+        const baseCalcDisplay = document.getElementById('base-calc-display');
+        const ivaDisplay = document.getElementById('iva-display');
+        const isrDisplay = document.getElementById('isr-display');
+        const invoiceTotalDisplay = document.getElementById('invoice-total-display');
+        const invoiceTotalPerPersonDisplay = document.getElementById('invoice-total-per-person-display');
+
+        
+        // Elementos del Modal
+        const quoteModal = document.getElementById('quoteModal');
+        const controlModal = document.getElementById('controlModal'); 
+        const closeBtnQuote = document.getElementsByClassName('close-btn')[0];
+        const closeBtnControl = document.getElementsByClassName('control-close-btn')[0]; 
+        const generateQuoteBtn = document.getElementById('generate-quote-btn');
+        const generateControlBtn = document.getElementById('generate-control-btn'); 
+        const quoteSummaryDiv = document.getElementById('quote-summary');
+        const controlSummaryDiv = document.getElementById('control-summary'); 
+
+        let draggedElement = null;
+
+        /**
+         * 🔄 Lógica de Asignación de Guías
+         */
+        function calculateGuides(people) {
+            if (people >= 1 && people <= 8) {
+                return 1;
+            } else if (people >= 9 && people <= 16) {
+                return 2;
+            } else if (people > 16) {
+                return 3; 
+            }
+            return 0;
+        }
+
+        /**
+         * 🎨 Inyecta o actualiza las filas dinámicas de Costo Fijo Adicional y Margen de Utilidad
+         * en el cuerpo de la tabla de desglose.
+         * @param {number} utilizedFixedCost - Costo fijo adicional calculado.
+         * @param {number} projectedIncome - Margen de utilidad calculado.
+         * @param {number} fixedPct - Porcentaje de costo fijo utilizado (para mostrar).
+         * @param {number} incomePct - Porcentaje de margen de utilidad utilizado (para mostrar).
+         */
+        function injectDynamicRows(utilizedFixedCost, projectedIncome, numGuides, fixedPct, incomePct) {
+            const tbody = document.getElementById('finance-breakdown-body');
+
+            // 1. Fila de Costo Fijo Adicional
+            let fixedCostRow = document.getElementById('extra-fixed-cost-row');
+            if (!fixedCostRow) {
+                // Insertar después de Costo Fijo de Guías (se asume que es el índice 2)
+                fixedCostRow = tbody.insertRow(2); 
+                fixedCostRow.id = 'extra-fixed-cost-row';
+                fixedCostRow.className = 'extra-fixed-cost-row';
+                fixedCostRow.innerHTML = `
+                    <td>Costo Fijo Adicional (Q${BASE_FIXED_COST.toFixed(2)} x ${fixedPct}%)</td>
+                    <td id="utilized-fixed-cost-display" style="text-align: right;">${utilizedFixedCost.toFixed(2)}</td>
+                `;
+            } else {
+                // Si ya existe, actualizar el valor y el texto del porcentaje
+                fixedCostRow.querySelector('td:first-child').innerHTML = `Costo Fijo Adicional (Q${BASE_FIXED_COST.toFixed(2)} x ${fixedPct}%)`;
+                fixedCostRow.querySelector('#utilized-fixed-cost-display').textContent = utilizedFixedCost.toFixed(2);
+            }
+            
+            // 2. Fila de Ingresos Proyectados (Margen de Utilidad)
+            let incomeRow = document.getElementById('projected-income-row');
+            // La fila del margen debe ir antes de la fila total (subtotal-base-row)
+            const subtotalBaseRow = document.getElementById('subtotal-base-row');
+            
+            if (!incomeRow) {
+                // Insertar justo antes del Subtotal BASE
+                incomeRow = tbody.insertRow(subtotalBaseRow.rowIndex - 1); 
+                incomeRow.id = 'projected-income-row';
+                incomeRow.className = 'projected-income-row';
+                incomeRow.innerHTML = `
+                    <td>(+) Margen de Utilidad (${incomePct}%)</td>
+                    <td id="projected-income-display" style="text-align: right;">${projectedIncome.toFixed(2)}</td>
+                `;
+            } else {
+                // Si ya existe, actualizar el valor y el texto del porcentaje
+                incomeRow.querySelector('td:first-child').innerHTML = `(+) Margen de Utilidad (${incomePct}%)`;
+                incomeRow.querySelector('#projected-income-display').textContent = projectedIncome.toFixed(2);
+            }
+        }
+
+        /**
+         * 💰 Recalcula y actualiza todos los totales financieros.
+         */
+        function updateFinancials() {
+            let subtotalActivities = 0;
+            let subtotalFixed = 0;
+            let hasGuide = false;
+            
+            // Obtener parámetros dinámicos de los inputs
+            const fixedCostPct = parseFloat(fixedCostPctInput.value) || 0;
+            const incomeMarginPct = parseFloat(incomeMarginPctInput.value) || 0;
+
+            const items = dropZone.querySelectorAll('.activity-item');
+            items.forEach(item => {
+                const baseValue = parseFloat(item.getAttribute('data-value'));
+                const type = item.getAttribute('data-type');
+                
+                if (type === 'guide-base') {
+                    hasGuide = true;
+                } else if (type === 'person') {
+                    subtotalActivities += baseValue * numPeople;
+                } else if (type === 'fixed') {
+                    subtotalFixed += baseValue;
+                }
+            });
+
+            // 1. Costo de Guías
+            let totalGuideCost = 0;
+            let numGuides = 0;
+            if (hasGuide) {
+                numGuides = calculateGuides(numPeople);
+                
+                // Sumar los valores base de todos los ítems de tipo 'guide-base'
+                let baseGuideCost = 0;
+                items.forEach(item => {
+                    if (item.getAttribute('data-type') === 'guide-base') {
+                        baseGuideCost += parseFloat(item.getAttribute('data-value'));
+                    }
+                });
+                
+                let baseCostPerGuide = 0;
+                items.forEach(item => {
+                    if (item.getAttribute('data-type') === 'guide-base') {
+                        baseCostPerGuide += parseFloat(item.getAttribute('data-value'));
+                    }
+                });
+                totalGuideCost = baseCostPerGuide * numGuides;
+            }
+            
+            const totalActivitiesAndFixed = subtotalActivities + subtotalFixed;
+
+            // 2. Costo Fijo Adicional (Calculado con el porcentaje del input)
+            const utilizedFixedCost = BASE_FIXED_COST * (fixedCostPct / 100);
+            
+            // 3. Base Imponible de COSTOS (Costo total sin Utilidad ni Impuestos)
+            const baseImponibleCostos = totalActivitiesAndFixed + totalGuideCost + utilizedFixedCost; 
+            
+            // 4. Margen de Utilidad (Calculado con el porcentaje del input sobre la base de costos)
+            const projectedIncome = baseImponibleCostos * (incomeMarginPct / 100);
+            
+            // 5. Cálculos para Impuestos
+            
+            // ** MODIFICACIÓN CLAVE **: La Base Imponible para el cálculo de taxes ahora incluye la utilidad.
+            const baseImponibleFinal = baseImponibleCostos + projectedIncome; // <--- INCLUYE UTILIDAD
+            
+            // Base Cálculo (Base Imponible FINAL * 100/95)
+            const baseCalculo = parseFloat((baseImponibleFinal * 100 / 95).toFixed(2));
+            
+            // Impuestos
+            const isrImponible = parseFloat((baseCalculo * 0.05).toFixed(2)); // 5% de ISR
+            const ivaImponible = parseFloat((baseCalculo * 0.12).toFixed(2)); // 12% de IVA
+            
+            // 6. Total Factura Final (Base Imponible Final + Impuestos)
+            const totalFacturaFinal = parseFloat((baseImponibleFinal + isrImponible + ivaImponible).toFixed(2));
+            
+            // Total por persona
+            const totalFacturaPerPerson = (numPeople > 0) ? parseFloat((totalFacturaFinal / numPeople).toFixed(2)) : 0.00;
+
+            // 7. Actualizar la interfaz (DOM) - Primero las filas dinámicas
+            injectDynamicRows(utilizedFixedCost, projectedIncome, numGuides, fixedCostPct, incomeMarginPct);
+            
+            subtotalActivitiesDisplay.textContent = totalActivitiesAndFixed.toFixed(2);
+            subtotalGuidesDisplay.textContent = totalGuideCost.toFixed(2);
+            numGuidesDisplay.textContent = numGuides;
+            
+            // Actualizar la etiqueta para reflejar que esta fila es solo costos
+            document.getElementById('subtotal-base-row').querySelector('td:first-child').textContent = '**SUBTOTAL BASE COSTOS (Sin Utilidad)**';
+            subtotalBaseDisplay.textContent = baseImponibleCostos.toFixed(2); 
+            
+            // El total principal en verde muestra Costos + Utilidad
+            document.getElementById('current-total').textContent = baseImponibleFinal.toFixed(2);
+
+            baseCalcDisplay.textContent = baseCalculo.toFixed(2);
+            ivaDisplay.textContent = ivaImponible.toFixed(2);
+            isrDisplay.textContent = isrImponible.toFixed(2);
+            
+            invoiceTotalPerPersonDisplay.textContent = totalFacturaPerPerson.toFixed(2);
+            invoiceTotalDisplay.textContent = totalFacturaFinal.toFixed(2);
+            
+            if (baseImponibleCostos > 0) {
+                if (placeholder) placeholder.style.display = 'none';
+            } else {
+                if (placeholder) placeholder.style.display = 'block';
+            }
+
+             // Actualizar el texto de los ítems en la drop-zone al cambiar la cantidad de personas
+            items.forEach(item => {
+                const type = item.getAttribute('data-type');
+                const baseValue = parseFloat(item.getAttribute('data-value'));
+                const activityText = item.getAttribute('data-activity-name');
+                
+                if (type === 'person') {
+                    const totalCost = (baseValue * numPeople).toFixed(2);
+                    // Actualizar el span dentro del item
+                    item.querySelector('span').innerHTML = `${activityText} - Q${baseValue.toFixed(2)} por persona (Total: Q${totalCost})`;
+                }
+            });
+            
+            return {
+                numPeople,
+                numGuides,
+                totalActivitiesAndFixed: totalActivitiesAndFixed.toFixed(2),
+                totalGuideCost: totalGuideCost.toFixed(2),
+                utilizedFixedCost: utilizedFixedCost.toFixed(2),
+                projectedIncome: projectedIncome.toFixed(2),
+                subtotalBase: baseImponibleCostos.toFixed(2), // Costos sin Utilidad
+                baseImponibleFinal: baseImponibleFinal.toFixed(2), // Costos con Utilidad
+                baseCalculo: baseCalculo.toFixed(2),
+                iva: ivaImponible.toFixed(2),
+                isr: isrImponible.toFixed(2),
+                totalFactura: totalFacturaFinal.toFixed(2),
+                totalFacturaPerPerson: totalFacturaPerPerson.toFixed(2), 
+                items: items,
+                fixedCostPct: fixedCostPct,
+                incomeMarginPct: incomeMarginPct 
+            };
+        }
+        
+        /**
+         * Manejador para eliminar un ítem de la zona de suelta y devolverlo.
+         */
+        function handleRemove(e) {
+            const itemToRemove = e.target.closest('.activity-item');
+            if (itemToRemove) {
+                
+                const restoredItem = itemToRemove.cloneNode(true);
+                
+                restoredItem.setAttribute('draggable', 'true');
+                restoredItem.style.cursor = 'grab';
+                restoredItem.style.borderLeftColor = '#28a745'; 
+                
+                const removeBtn = restoredItem.querySelector('.remove-btn');
+                if (removeBtn) {
+                    removeBtn.remove();
+                }
+
+                // Restaurar el texto original (con el formato (QXXX))
+                const originalActivityText = restoredItem.getAttribute('data-activity-name');
+                const originalBaseValue = parseFloat(restoredItem.getAttribute('data-value'));
+                restoredItem.innerHTML = `${originalActivityText} (Q${originalBaseValue.toFixed(0)})`;
+
+                // Quitar los atributos de helper de la drop-zone
+                restoredItem.removeAttribute('data-activity-name');
+                
+                // Asegurar que el estilo sea el de cuadrícula al volver
+                restoredItem.style.display = 'flex'; 
+                restoredItem.style.justifyContent = 'center'; 
+                restoredItem.style.textAlign = 'center';
+
+
+                // Determinar la sección a la que pertenece el ítem
+                let targetSectionId;
+                const activityText = restoredItem.textContent.trim();
+                
+                if (activityText.includes('Transporte') || activityText.includes('Guatemala a San Juan')) {
+                    targetSectionId = 'section-transporte';
+                } else if (activityText.includes('Guía')) {
+                    targetSectionId = 'section-guia';
+                } else if (activityText.includes('Gastronómica') || activityText.includes('Cena')) {
+                    targetSectionId = 'section-alimentacion';
+                } else if (activityText.includes('Hospedaje')) { 
+                    targetSectionId = 'section-hospedaje';
+                } else {
+                    targetSectionId = 'section-experiencias';
+                }
+
+                const targetSection = document.getElementById(targetSectionId);
+                const targetDiv = targetSection.querySelector('div'); 
+
+
+                if (targetDiv) {
+                    // Re-insertar en la lista pendiente en orden alfabético dentro de su sección
+                    let inserted = false;
+                    const itemsInTargetSection = targetDiv.querySelectorAll('.activity-item');
+                    const newItemText = restoredItem.textContent.trim().replace('X', '').trim();
+                    
+                    for (let i = 0; i < itemsInTargetSection.length; i++) {
+                        const existingItemText = itemsInTargetSection[i].textContent.trim().replace('X', '').trim();
+                        if (newItemText < existingItemText) {
+                            targetDiv.insertBefore(restoredItem, itemsInTargetSection[i]);
+                            inserted = true;
+                            break;
+                        }
+                    }
+                    if (!inserted) {
+                         // Manejar el caso del placeholder en Hospedaje u otras secciones
+                        const placeholderP = targetDiv.querySelector('p');
+                        if (placeholderP && targetSectionId === 'section-hospedaje') {
+                             targetDiv.insertBefore(restoredItem, placeholderP);
+                        } else {
+                            targetDiv.appendChild(restoredItem);
+                        }
+                    }
+                    
+                    addDragEvents(restoredItem);
+                }
+                
+                itemToRemove.remove();
+                
+                updateFinancials();
+            }
+        }
+        
+        /**
+         * Función para añadir los eventos de arrastre a un ítem
+         */
+        function addDragEvents(item) {
+            item.addEventListener('dragstart', (e) => {
+                draggedElement = e.target;
+                setTimeout(() => e.target.style.opacity = '0.4', 0);
+            });
+            
+            item.addEventListener('dragend', (e) => {
+                e.target.style.opacity = '1';
+            });
+        }
+        
+        // Función de Callback después de imprimir
+        function afterPrint(modal) {
+             modal.style.display = 'none';
+             modal.classList.remove('active-print');
+        }
+
+        /**
+         * 📄 Genera el HTML para la Hoja de Control y la imprime.
+         */
+        function generateControlSheetAndPrint() {
+            const data = updateFinancials();
+            const items = data.items;
+
+            document.getElementById('quoteModal').classList.remove('active-print');
+            controlModal.classList.add('active-print');
+            controlModal.style.display = 'block';
+
+            if (items.length === 0) {
+                controlSummaryDiv.innerHTML = '<h1 class="control-title" style="text-align: center;">Hoja de Control Financiero</h1><p style="text-align: center;">¡ATENCIÓN! No hay actividades seleccionadas para el control.</p>';
+                return;
+            }
+
+            // 1. Tabla de Detalle de Actividades
+            let tableHTML = `
+                <h1 class="control-title" style="text-align: center;">Hoja de Control Financiero</h1>
+                <p><strong>Personas:</strong> ${data.numPeople} &nbsp;&nbsp;|&nbsp;&nbsp; <strong>Guías Asignados:</strong> ${data.numGuides}</p>
+                <table id="control-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Actividad</th>
+                            <th style="text-align: right;">Costo Base Unitario (Q)</th>
+                            <th style="text-align: right;">Multiplicador</th>
+                            <th style="text-align: right;">Subtotal (Q)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            let itemCounter = 1;
+            items.forEach(item => {
+                const type = item.getAttribute('data-type');
+                const baseValue = parseFloat(item.getAttribute('data-value'));
+                let unitCost = baseValue.toFixed(2);
+                let multiplierText = '';
+                let subtotalValue = 0;
+                let activityText = item.getAttribute('data-activity-name'); 
+                
+                if (type === 'guide-base') {
+                    // Si hay varios ítems de guía, el unitCost es el valor del ítem, pero se multiplica por numGuides
+                    let baseCostPerItem = parseFloat(item.getAttribute('data-value')); 
+                    unitCost = baseCostPerItem.toFixed(2);
+                    multiplierText = `${data.numGuides} Guía(s)`;
+                    subtotalValue = baseCostPerItem * data.numGuides; 
+                    activityText = item.getAttribute('data-activity-name');
+                } else if (type === 'person') {
+                    multiplierText = `${data.numPeople} persona(s)`;
+                    subtotalValue = baseValue * data.numPeople;
+                } else if (type === 'fixed') {
+                    multiplierText = 'Fijo';
+                    subtotalValue = baseValue;
+                }
+                
+                tableHTML += `
+                    <tr>
+                        <td>${itemCounter++}</td>
+                        <td>${activityText}</td>
+                        <td style="text-align: right;">${unitCost}</td>
+                        <td style="text-align: right;">${multiplierText}</td>
+                        <td style="text-align: right;">${subtotalValue.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += `
+                    </tbody>
+                </table>
+            `;
+            
+            // 2. Resumen de Desglose
+            const summaryHTML = `
+                <div class="finance-summary-box">
+                    <h3>Resumen Financiero:</h3>
+                    <p>Subtotal Actividades x Personas y Fijas: **Q${data.totalActivitiesAndFixed}**</p>
+                    <p>Costo Fijo de Guías (${data.numGuides} Guías): **Q${data.totalGuideCost}**</p>
+                    <p>Costo Fijo Adicional (Q${BASE_FIXED_COST.toFixed(2)} x ${data.fixedCostPct}%): **Q${data.utilizedFixedCost}**</p>
+                    <hr>
+                    <p>SUBTOTAL BASE COSTOS (Sin Utilidad): **Q${data.subtotalBase}**</p>
+                    <p>(+) Margen de Utilidad (${data.incomeMarginPct}%): **Q${data.projectedIncome}**</p>
+                    <hr>
+                    <p>Base Cálculo (para Impuestos): Q${data.baseCalculo}</p>
+                    <p>(+) IVA (12%): Q${data.iva}</p>
+                    <p>(+) ISR (5%): Q${data.isr}</p>
+                    <hr>
+                    <p>Pago Total por Persona: **Q${data.totalFacturaPerPerson}**</p>
+                    <p class="final-total-print">TOTAL DE FACTURA: **Q${data.totalFactura}**</p>
+                </div>
+            `;
+
+            controlSummaryDiv.innerHTML = tableHTML + summaryHTML;
+            
+            // 3. Abrir Modal y Forzar Impresión
+            window.print();
+            afterPrint(controlModal);
+        }
+
+        // Función de cotización
+        function generateQuoteAndPrint() {
+            const data = updateFinancials();
+            const completedItems = data.items;
+            const totalFactura = data.totalFactura;
+            const numGuides = data.numGuides;
+            
+            document.getElementById('controlModal').classList.remove('active-print');
+            quoteModal.classList.add('active-print');
+            quoteModal.style.display = 'block';
+
+            let summaryHTML = `<h1 id="print-title" style="text-align: center;">Cotización de Servicios</h1>`;
+            
+            if (completedItems.length > 0) {
+                
+                summaryHTML += `
+                    <table id="quote-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 80%;">Detalle del Servicio/Actividad</th> 
+                                <th style="width: 20%; text-align: right;">Precio Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                completedItems.forEach(item => {
+                    let activityText = item.getAttribute('data-activity-name');
+                    const type = item.getAttribute('data-type');
+                    
+                    if (type === 'guide-base') {
+                        // Concatenar todos los ítems de guía en una sola línea si es posible,
+                        // pero para simplificar, se muestra cada uno por separado.
+                        activityText = `${activityText} (Costo por Guía x ${numGuides} Guía${numGuides > 1 ? 's' : ''})`;
+                    } else if (type === 'person') {
+                         activityText = `${activityText} (x ${data.numPeople} personas)`;
+                    }
+                    
+                    summaryHTML += `
+                        <tr>
+                            <td>${activityText}</td>
+                            <td></td> </tr>
+                    `;
+                });
+
+                // Incluir el Costo Fijo Adicional en el detalle para la cotización si no son 0
+                if (parseFloat(data.utilizedFixedCost) > 0) {
+                     summaryHTML += `
+                        <tr>
+                            <td>Costo Fijo Operativo (Q${data.utilizedFixedCost} total)</td>
+                            <td></td> </tr>
+                    `;
+                }
+
+                // --- MODIFICACIÓN: Bloque ELIMINADO para no mostrar la Utilidad en la Cotización ---
+                /*
+                if (parseFloat(data.projectedIncome) > 0) {
+                     summaryHTML += `
+                        <tr>
+                            <td>Margen de Utilidad del ${data.incomeMarginPct}%</td>
+                            <td></td> </tr>
+                    `;
+                }
+                */
+                // ---------------------------------------------------------------------------------
+                
+                summaryHTML += `
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td style="text-align: right; font-weight: bold; border-top: 1px solid #ccc;">Costo total por persona</td>
+                                <td style="text-align: right; font-weight: bold; border-top: 1px solid #ccc;">Q${data.totalFacturaPerPerson}</td>
+                            </tr>
+                            <tr class="quote-total-row">
+                                <td style="text-align: right;">TOTAL DE FACTURA</td>
+                                <td style="text-align: right;">Q${totalFactura}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                `;
+
+            } else {
+                summaryHTML += '<p style="text-align: center;">¡ATENCIÓN! No hay actividades seleccionadas para cotizar.</p>';
+            }
+            
+            quoteSummaryDiv.innerHTML = summaryHTML;
+            
+            window.print();
+            afterPrint(quoteModal);
+        }
+
+
+        // --- Manejadores de Eventos ---
+        generateQuoteBtn.addEventListener('click', generateQuoteAndPrint);
+        generateControlBtn.addEventListener('click', generateControlSheetAndPrint); 
+
+        // Cierre de Modal
+        closeBtnQuote.addEventListener('click', () => {
+            quoteModal.style.display = 'none';
+            quoteModal.classList.remove('active-print');
+        });
+        
+        if (closeBtnControl) {
+            closeBtnControl.addEventListener('click', () => {
+                controlModal.style.display = 'none';
+                controlModal.classList.remove('active-print');
+            });
+        }
+
+        window.addEventListener('click', (e) => {
+            if (e.target == quoteModal) {
+                quoteModal.style.display = 'none';
+                quoteModal.classList.remove('active-print');
+            }
+             if (e.target == controlModal) {
+                controlModal.style.display = 'none';
+                controlModal.classList.remove('active-print');
+            }
+        });
+        
+        // EVENTO CLAVE: Recalcular cuando cambie el número de personas
+        numPeopleInput.addEventListener('input', (e) => {
+            numPeople = Math.max(1, parseInt(e.target.value) || 1);
+            e.target.value = numPeople; 
+            updateFinancials();
+        });
+
+        // NUEVOS EVENTOS: Recalcular cuando cambien los porcentajes
+        fixedCostPctInput.addEventListener('input', updateFinancials);
+        incomeMarginPctInput.addEventListener('input', updateFinancials);
+
+
+        // --- Inicialización y Arrastre/Soltar ---
+        
+        const initialItems = document.querySelectorAll('#pending-list-container .activity-item');
+        initialItems.forEach(addDragEvents);
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault(); 
+            dropZone.style.border = '3px solid #007bff'; 
+        });
+
+        dropZone.addEventListener('dragleave', (e) => {
+            dropZone.style.border = '3px dashed #007bff';
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault(); 
+            dropZone.style.border = '3px dashed #007bff';
+
+            if (draggedElement) {
+                
+                const completedItem = draggedElement.cloneNode(true);
+                completedItem.style.cursor = 'default';
+                completedItem.removeAttribute('draggable');
+                completedItem.style.opacity = '1';
+                completedItem.style.display = 'flex'; 
+                completedItem.style.justifyContent = 'space-between'; 
+                completedItem.style.textAlign = 'left';
+
+                const type = completedItem.getAttribute('data-type');
+                const baseValue = parseFloat(completedItem.getAttribute('data-value'));
+                
+                // 1. Obtener y guardar el nombre original de la actividad
+                const originalActivityText = completedItem.textContent.replace(/\(Q\d+\)/g, '').trim(); 
+                completedItem.setAttribute('data-activity-name', originalActivityText);
+
+                // 2. Modificar el contenido para la visualización en la drop-zone
+                if (type === 'person') {
+                    const totalCost = (baseValue * numPeople).toFixed(2);
+                    
+                    // Reemplazar el contenido para mostrar el total por persona
+                    completedItem.innerHTML = `
+                        <span>${originalActivityText} - Q${baseValue.toFixed(2)} por persona (Total: Q${totalCost})</span>
+                    `;
+                    
+                } else if (type === 'guide-base') {
+                     completedItem.innerHTML = `
+                        <span>${originalActivityText}</span>
+                    `;
+                } else {
+                     // Ítem fijo
+                     completedItem.innerHTML = `
+                        <span>${originalActivityText} - Fijo (Q${baseValue.toFixed(2)})</span>
+                    `;
+                }
+
+                // 3. Añadir botón de remover
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'remove-btn';
+                removeBtn.textContent = 'X';
+                removeBtn.addEventListener('click', handleRemove);
+                completedItem.appendChild(removeBtn);
+
+                // 4. Insertar el elemento
+                let inserted = false;
+                const itemsInDropZone = dropZone.querySelectorAll('.activity-item');
+                const newItemText = completedItem.textContent.trim().replace('X', '').trim();
+                
+                for (let i = 0; i < itemsInDropZone.length; i++) {
+                     const existingItemText = itemsInDropZone[i].textContent.trim().replace('X', '').trim();
+                    if (newItemText < existingItemText) {
+                        dropZone.insertBefore(completedItem, itemsInDropZone[i]);
+                        inserted = true;
+                        break;
+                    }
+                }
+                if (!inserted) {
+                    dropZone.appendChild(completedItem);
+                }
+                
+                draggedElement.remove();
+
+                updateFinancials();
+                draggedElement = null;
+            }
+        });
+        
+        // Inicializar el cálculo al cargar
+        updateFinancials();
+
+    </script>
+</body>
+</html>
