@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Cotizador Paquetes Paquisis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #f0f2f5; --primary: #27ae60; --text: #2d3436; }
+        @page { size: letter; margin: 0; }
+        
+        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; font-size: 13px; }
+        
+        .generator-side { width: 75%; padding: 20px; overflow-y: auto; background: #fff; position: relative; display: flex; flex-direction: column; align-items: center; }
+        .control-side { width: 25%; padding: 20px; overflow-y: auto; background: #f8f9fa; border-left: 2px solid #ddd; }
+
+        .document-preview { 
+            position: relative; width: 8.5in; min-height: 11in; background-color: white;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2); overflow: hidden; flex-shrink: 0;
+            -webkit-print-color-adjust: exact; print-color-adjust: exact;
+        }
+
+        .background-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('logo.png'); background-size: 100% 100%; z-index: 0;
+        }
+
+        .content-area { position: relative; z-index: 1; padding: 5.5cm 2.5cm 3cm 2.5cm; }
+
+        .no-print { width: 100%; max-width: 8.5in; margin-bottom: 20px; }
+        .config-panel { background: #eef2f7; padding: 15px; border-radius: 8px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; border: 1px solid #ccc; }
+        .config-panel div { display: flex; flex-direction: column; }
+        .config-panel label { font-weight: bold; font-size: 11px; margin-bottom: 3px; }
+        input { width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { text-align: left; border-bottom: 2px solid var(--primary); padding: 8px; }
+        td { padding: 8px; border-bottom: 1px solid #eee; }
+        
+        .disabled-row { color: #ccc; text-decoration: line-through; }
+        .check-col { width: 30px; }
+
+        .financial-summary { margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px; }
+        .calc-row { display: flex; justify-content: space-between; font-size: 11px; color: #666; margin-bottom: 2px; }
+        .totals-final { margin-top: 15px; text-align: right; border-top: 2px solid #000; padding-top: 10px; }
+        .total-line { font-size: 26px; font-weight: 800; display: flex; justify-content: flex-end; gap: 10px; align-items: baseline; }
+        .per-pax-line { font-size: 15px; font-weight: 600; color: #2d3436; margin-top: 2px; }
+
+        .btn { padding: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; background: var(--primary); color: white; }
+        
+        @media print {
+            body { background: white; }
+            .no-print, .control-side, .check-col, .price-col, .calc-row { display: none !important; }
+            .disabled-row { display: none !important; } 
+            .generator-side { width: 100%; padding: 0; display: block; }
+            .document-preview { box-shadow: none; margin: 0; width: 100%; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .background-overlay { display: block !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="generator-side">
+        <div class="no-print">
+            <h3>Configuración Paquetes Paquisis</h3>
+            <div class="config-panel">
+                <div><label>Cliente</label><input type="text" id="inClient" oninput="calculate()"></div>
+                <div><label>NIT</label><input type="text" id="inNit" value="CF" oninput="calculate()"></div>
+                <div><label>No. Personas</label><input type="number" id="inPax" value="1" min="1" oninput="updatePax()"></div>
+                <div><label>Tipo Cambio ($)</label><input type="number" id="inTC" value="7.30" step="0.1" oninput="calculate()"></div>
+                <div><label>% Costo Fijo</label><input type="number" id="inPercF" value="2" oninput="calculate()"></div>
+                <div><label>% Ingreso Proy.</label><input type="number" id="inPercI" value="10" oninput="calculate()"></div>
+                <div style="grid-column: span 3; background: #d1e7dd; padding: 10px; border-radius: 5px; margin-top: 5px;">
+                    <label>💰 Precio Guía (Edición Manual)</label>
+                    <input type="number" id="inGuiaManual" value="400" oninput="calculate()">
+                </div>
+            </div>
+        </div>
+
+        <div class="document-preview">
+            <div class="background-overlay"></div>
+            <div class="content-area">
+                <h2 style="text-align:center; margin-top:0; color:#27ae60;">Volcán</h2>
+                <h4 style="text-align:center; margin-top:-10px;">COTIZACIÓN DE SERVICIOS</h4>
+                
+                <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                    <div>
+                        <strong>Nombre/NIT:</strong> <span id="outName">---</span><br>
+                        <strong>No. Personas:</strong> <span id="outPax">1</span>
+                    </div>
+                    <div style="text-align: right;">
+                        <strong>Fecha:</strong> <span id="outDate">---</span><br>
+                        <strong>Destino:</strong> Volcán Paquisis
+                    </div>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="check-col no-print"></th>
+                            <th style="width: 70px;">Hora</th>
+                            <th>Descripción del Itinerario</th>
+                            <th class="price-col no-print" style="text-align: right;">Subtotal (GTQ)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="itinerary-body"></tbody>
+                </table>
+
+                <div class="financial-summary">
+                    <div class="calc-row"><span>Costo Variable + Fijo:</span> <span id="c-varf">Q 0.00</span></div>
+                    <div class="calc-row"><span>Ingreso Proyectado:</span> <span id="c-ing">Q 0.00</span></div>
+                    
+                    <div class="totals-final">
+                        <div class="total-line"><span>TOTAL:</span> <span id="v-final-gtq">Q 0</span></div>
+                        <div class="per-pax-line">Precio por persona: <b>Q <span id="v-pax-gtq">0</span></b></div>
+                        
+                        <div class="total-line" style="font-size: 18px; color: #444; margin-top: 15px;"><span>TOTAL USD:</span> <span id="v-final-usd">$ 0</span></div>
+                        <div class="per-pax-line">Precio por persona: <b>$ <span id="v-pax-usd">0</span> USD</b></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn no-print" onclick="window.print()" style="margin-top:20px; max-width: 8.5in;">🖨️ Imprimir Cotización</button>
+    </div>
+
+    <div class="control-side no-print">
+        <h3>Auditoría Interna</h3>
+        <div id="debug-log" style="background:#2d3436; color:#00ff00; padding:15px; border-radius:8px; font-family:monospace; font-size:11px; line-height:1.6;">
+        </div>
+    </div>
+
+    <script>
+        let activeItems = [true, true, true, true, true, true, true, true];
+
+        function updatePax() {
+            const pax = parseInt(document.getElementById('inPax').value) || 1;
+            let sugerido = (pax >= 9) ? 1000 : (pax >= 4) ? 600 : 400;
+            document.getElementById('inGuiaManual').value = sugerido;
+            calculate();
+        }
+
+        function toggleItem(index) {
+            activeItems[index] = !activeItems[index];
+            calculate();
+        }
+
+        function calculate() {
+            const pax = parseInt(document.getElementById('inPax').value) || 1;
+            const tc = parseFloat(document.getElementById('inTC').value) || 7.30;
+            const percFixed = parseFloat(document.getElementById('inPercF').value) / 100;
+            const percIng = parseFloat(document.getElementById('inPercI').value) / 100;
+            const guiaManual = parseFloat(document.getElementById('inGuiaManual').value) || 0;
+
+            document.getElementById('outName').innerText = (document.getElementById('inClient').value + " / " + document.getElementById('inNit').value) || "---";
+            document.getElementById('outPax').innerText = pax;
+            document.getElementById('outDate').innerText = new Date().toLocaleDateString();
+
+            const items = [
+                { h: "04:00", d: "Guía Local Certificado", p: guiaManual, type: 'fijo' },
+                { h: "04:20", d: "Transporte Terrestre y Entrada al Volcán", p: 500, type: 'fijo' },
+                { h: "04:30", d: "Inicio de Ascenso al Volcán", p: 0, type: 'fijo' },
+                { h: "06:30", d: "Degustación de Café", p: 25, type: 'pax' },
+                { h: "08:30", d: "Box Lunch Especial", p: 65, type: 'pax' },
+                { h: "10:30", d: "Descenso del Volcán", p: 0, type: 'fijo' },
+                { h: "12:30", d: "Transporte Terrestre hacia Restaurante", p: 500, type: 'fijo' },
+                { h: "13:30", d: "Degustacíon Gastonomico", p: 75, type: 'pax' }
+            ];
+
+            let sumVars = 0;
+            const tbody = document.getElementById('itinerary-body');
+            tbody.innerHTML = '';
+            
+            items.forEach((item, index) => {
+                const isActive = activeItems[index];
+                let rowCost = (item.type === 'pax') ? (item.p * pax) : item.p;
+                
+                if (isActive) sumVars += rowCost;
+
+                tbody.innerHTML += `
+                    <tr class="${isActive ? '' : 'disabled-row'}">
+                        <td class="check-col no-print">
+                            <input type="checkbox" ${isActive ? 'checked' : ''} onchange="toggleItem(${index})">
+                        </td>
+                        <td><b>${item.h}</b></td>
+                        <td>${item.d}</td>
+                        <td class="price-col no-print" style="text-align: right;">Q ${isActive ? rowCost.toFixed(2) : '0.00'}</td>
+                    </tr>`;
+            });
+
+            // Fórmulas de costos
+            let cf = 12970 * percFixed;
+            let ing = (sumVars + cf) * percIng;
+            let base = sumVars + cf + ing;
+            let baseFiscal = base / 0.95;
+            let iva = baseFiscal * 0.12;
+            let isr = baseFiscal * 0.05;
+            let subtotal = base + iva + isr;
+            
+            // Total Final con Comisión POS
+            let totalGTQ = subtotal / 0.94;
+            let totalUSD = totalGTQ / tc;
+
+            // REDONDEO PARA EL CLIENTE
+            let totalGTQ_Rounded = Math.ceil(totalGTQ);
+            let totalUSD_Rounded = Math.ceil(totalUSD);
+            let perPaxGTQ_Rounded = Math.ceil(totalGTQ_Rounded / pax);
+            let perPaxUSD_Rounded = Math.ceil(totalUSD_Rounded / pax);
+
+            // Actualizar interfaz
+            document.getElementById('c-varf').innerText = `Q ${(sumVars + cf).toFixed(2)}`;
+            document.getElementById('c-ing').innerText = `Q ${ing.toFixed(2)}`;
+            
+            // Mostrar valores redondeados
+            document.getElementById('v-final-gtq').innerText = `Q ${totalGTQ_Rounded.toLocaleString()}`;
+            document.getElementById('v-pax-gtq').innerText = perPaxGTQ_Rounded.toLocaleString();
+            
+            document.getElementById('v-final-usd').innerText = `$ ${totalUSD_Rounded.toLocaleString()}`;
+            document.getElementById('v-pax-usd').innerText = perPaxUSD_Rounded.toLocaleString();
+
+            document.getElementById('debug-log').innerHTML = `
+                Suma Actividades: Q ${sumVars.toFixed(2)}<br>
+                Guía Manual: Q ${guiaManual.toFixed(2)}<br>
+                Subtotal Pre-Impuestos: Q ${base.toFixed(2)}<br>
+                Total Real (Sin redondeo): Q ${totalGTQ.toFixed(2)}
+            `;
+        }
+        window.onload = calculate;
+    </script>
+</body>
+</html>
