@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cotizador San Juan La Laguna - v3 Final</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #0F172A; 
+            --primary: #10B981; 
+            --text-light: #ff9100; 
+            --card-bg: #1E293B;
+            --border: #334155;
+            --accent: #F59E0B;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg); 
+            color: var(--text-light);
+            min-height: 100vh;
+        }
+
+        .main-container {
+            display: flex;
+            width: 100%;
+            gap: 20px;
+            padding: 20px;
+            align-items: flex-start;
+        }
+
+        .config-side { width: 380px; display: flex; flex-direction: column; gap: 15px; flex-shrink: 0; }
+        .audit-side { width: 300px; flex-shrink: 0; display: flex; flex-direction: column; gap: 15px; }
+        .preview-side { flex-grow: 1; display: flex; justify-content: center; }
+
+        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 15px; }
+        h3 { color: var(--primary); margin-bottom: 12px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        input, select, textarea { 
+            width: 100%; padding: 8px; background: #0f172a; border: 1px solid var(--border); 
+            color: white; border-radius: 6px; font-size: 12px;
+        }
+
+        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .input-group { margin-bottom: 10px; }
+        label { display: block; font-size: 10px; color: #94a3b8; margin-bottom: 4px; font-weight: 700; }
+
+        .otas-row {
+            display: flex; align-items: center; gap: 10px; background: rgba(245, 158, 11, 0.1);
+            padding: 8px; border-radius: 8px; border: 1px solid var(--accent); margin-top: 10px;
+        }
+
+        .audit-panel {
+            background: #000; padding: 18px; border-radius: 12px; color: #10B981;
+            font-family: 'Courier New', monospace; font-size: 11px; border: 1px solid #10B981;
+            line-height: 1.5; min-height: 450px;
+        }
+
+        /* --- ESTILOS DE IMPRESIÓN COPIADOS DE CULTURAL.HTML --- */
+        .document-preview { 
+            position: relative; 
+            width: 8.5in; 
+            min-height: 11in; 
+            background-color: white; 
+            color: #000; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+
+        .background-overlay {
+            position: absolute; 
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('logo.png'); 
+            background-size: 100% 100%; 
+            background-repeat: no-repeat;
+            z-index: 0; 
+        }
+
+        .content-area { 
+            position: relative; 
+            z-index: 1; 
+            padding-top: 4.5cm;    /* Margen exacto de Cultural.html */
+            padding-bottom: 3cm; 
+            padding-left: 2.5cm; 
+            padding-right: 2.5cm; 
+            height: 100%; 
+            display: flex; 
+            flex-direction: column; 
+            font-size: 11px;
+        }
+
+        .itinerary-table { width: 100%; border: 1.5px solid #000; border-collapse: collapse; margin-top: 10px; }
+        .itinerary-table th, .itinerary-table td { border: 1px solid #000; padding: 6px 10px; vertical-align: top; }
+        .day-column { width: 80px; font-weight: bold; background: #f1f5f9; text-align: center; }
+
+        @media print {
+            @page {
+                size: letter;
+                margin: 0;
+            }
+            .no-print { display: none !important; }
+            body { background: white !important; }
+            .main-container { padding: 0; display: block; }
+            .preview-side { display: block; width: 100%; }
+            .document-preview { 
+                box-shadow: none !important; 
+                width: 8.5in !important; 
+                height: 11in !important; 
+                margin: 0 !important;
+            }
+            .background-overlay { 
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact; 
+                opacity: 1 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+    <div class="config-side no-print">
+        <div class="card">
+            <h3>👤 Información</h3>
+            <div class="input-grid">
+                <div class="input-group"><label>Nombre</label><input type="text" id="inClient" oninput="calculate()"></div>
+                <div class="input-group"><label>NIT</label><input type="text" id="inNit" value="CF" oninput="calculate()"></div>
+            </div>
+            <div class="input-group"><label>Observaciones</label><textarea id="inObs" rows="2" oninput="calculate()"></textarea></div>
+        </div>
+
+        <div class="card">
+            <h3>📊 Configuración Económica</h3>
+            <div class="input-grid">
+                <div class="input-group"><label>Pax</label><input type="number" id="inPax" value="1" oninput="updatePax()"></div>
+                <div class="input-group"><label>T. Cambio</label><input type="number" id="inTC" value="7.70" oninput="calculate()"></div>
+            </div>
+            <div class="input-grid">
+                <div class="input-group"><label>% Fijo</label><input type="number" id="inPercF" value="2" oninput="calculate()"></div>
+                <div class="input-group"><label>% Utilidad</label><input type="number" id="inPercI" value="10" oninput="calculate()"></div>
+            </div>
+            <div class="otas-row">
+                <div style="flex-grow:1"><label style="color:var(--accent)">% OTAS</label><input type="number" id="inOtas" value="45" oninput="calculate()"></div>
+                <div style="padding-top:15px;"><input type="checkbox" id="checkOtas" onchange="calculate()" style="width:20px; height:20px; cursor:pointer;"></div>
+            </div>
+        </div>
+
+        <div class="card" style="max-height: 250px; overflow-y: auto;">
+            <h3>📅 Actividades</h3>
+            <div id="selector-container"></div>
+        </div>
+
+        <div class="card">
+            <h3>🛶 Ajustes de Costo Directo (Q)</h3>
+            <div class="input-grid">
+                <div class="input-group"><label>Lancha Privada</label><input type="number" id="inLancha" value="0" oninput="calculate()"></div>
+                <div class="input-group"><label>Guía</label><input type="number" id="inGuiaManual" value="300" oninput="calculate()"></div>
+            </div>
+            <div class="input-group"><label>Entrada General Mirador</label><input type="number" id="inMirador" value="25" oninput="calculate()"></div>
+            
+            <select id="currencyDisplay" onchange="calculate()" style="margin-top:10px;">
+                <option value="both">Mostrar Q y $</option>
+                <option value="gtq">Solo Quetzales</option>
+                <option value="usd">Solo Dólares</option>
+            </select>
+            <button onclick="window.print()" style="width:100%; padding:14px; background:var(--primary); color:white; border:none; margin-top:10px; border-radius:8px; font-weight:bold; cursor:pointer;">🖨️ IMPRIMIR</button>
+        </div>
+    </div>
+
+    <div class="audit-side no-print">
+        <div class="audit-panel">
+            <div style="font-weight:bold; color:#FFF; margin-bottom:10px; border-bottom: 1px solid #10B981; padding-bottom: 5px;">📊 AUDITORÍA</div>
+            <div id="debug-log"></div>
+        </div>
+    </div>
+
+    <div class="preview-side">
+        <div class="document-preview">
+            <div class="background-overlay"></div>
+            <div class="content-area">
+                <div style="text-align:center;">
+                    <h1 style="color:#27ae60; font-size: 22px; margin-bottom: 5px;">SAN JUAN LA LAGUNA</h1>
+                    <p style="letter-spacing:4px; font-size: 10px; color:#27ae60;">ITINERARIO PERSONALIZADO</p>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; margin-top:20px; border-bottom: 2px solid #27ae60; padding-bottom:10px;">
+                    <div>
+                        <strong>CLIENTE:</strong> <span id="outName">---</span><br>
+                        <strong>NIT:</strong> <span id="outNit">CF</span>
+                    </div>
+                    <div style="text-align:right;">
+                        <strong>FECHA:</strong> <span id="outDate">---</span><br>
+                        <strong>PERSONAS:</strong> <span id="outPax">1</span>
+                    </div>
+                </div>
+
+                <table class="itinerary-table">
+                    <thead>
+                        <tr>
+                            <th class="day-column">DÍA</th>
+                            <th>DESCRIPCIÓN DE ACTIVIDADES</th>
+                        </tr>
+                    </thead>
+                    <tbody id="itinerary-preview-body"></tbody>
+                </table>
+
+                <div id="outObs" style="margin-top:15px; font-style:italic; border: 1px dashed #ccc; padding: 10px; font-size: 10px; background: rgba(0,0,0,0.02);"></div>
+
+                <div style="margin-top:auto; text-align:right; border-top:2.5px solid #27ae60; padding-top:12px;">
+                    <div id="resGTQ">
+                        <h2 style="font-size: 24px; margin:0;">TOTAL: Q <span id="v-final-gtq">0</span></h2>
+                        <p style="font-size: 12px;">Precio por persona: <b>Q <span id="v-pax-gtq">0</span></b></p>
+                    </div>
+                    <div id="resUSD" style="margin-top:8px; border-top:1px dashed #ccc; padding-top:8px;">
+                        <h3 style="font-size: 16px; margin:0; color: #555;">TOTAL USD: $ <span id="v-final-usd">0</span></h3>
+                        <p style="font-size: 11px; color: #555;">Precio por persona: <b>$ <span id="v-pax-usd">0</span></b></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let activities = [
+        { d: "Transporte Lacustre Privado (Panajachel - San Juan)", p: 50, day: 0 },
+        { d: "Cena Familiar", p: 75, day: 0 },
+        { d: "Guía Local (Día 1)", p: 0, day: 0 },
+        { d: "Guías Locales (Amanecer y tour del día)", p: 50, day: 0 },
+        { d: "Amanecer Mirador (Transporte e ingreso)", p: 30, day: 0 },
+        { d: "Desayuno Familiar", p: 65, day: 0 },
+        { d: "Recorrido calles pintorescas", p: 0, day: 0 },
+        { d: "Entradas a los lugares para los tours", p: 25, day: 0 },
+        { d: "Tour de abejas sin aguijón", p: 0, day: 0 },
+        { d: "Tour de Cerveza artesanal", p: 0, day: 0 },
+        { d: "Demostración de tintes y textiles", p: 0, day: 0 },
+        { d: "Almuerzo Típico Gastronómico", p: 75, day: 0 },
+        { d: "Visita galería de arte local", p: 0, day: 0 },
+        { d: "Tour de Cacao", p: 0, day: 0 },
+        { d: "Degustación de café", p: 25, day: 0 },
+        { d: "Mirador y sesión de fotos (Guía)", p: 25, day: 0 },
+        { d: "Temazcal", p: 175, day: 0 },
+        { d: "Guías Locales (Día 3)", p: 50, day: 0 },
+        { d: "Desayuno Familiar (Día 3)", p: 65, day: 0 },
+        { d: "Mirador San Antonio Palopó", p: 0, day: 0 },
+        { d: "Tour Santiago Atitlán", p: 25, day: 0 },
+        { d: "Almuerzo (Día 3)", p: 75, day: 0 },
+        { d: "Canopy San Pedro La Laguna", p: 150, day: 0 },
+        { d: "Tour San Pedro (Iglesia)", p: 25, day: 0 },
+        { d: "Transporte Terrestre Privado (Inter-pueblos)", p: 25, day: 0 },
+        { d: "Transporte Lacustre Privado (Día 3)", p: 50, day: 0 },
+        { d: "Transporte Lacustre privado (Retorno)", p: 50, day: 0 },
+        { d: "Guía por una hora (Día 4)", p: 20 , day: 0 }
+    ];
+
+    function updatePax() {
+        const pax = parseInt(document.getElementById('inPax').value) || 1;
+        const guiaInput = document.getElementById('inGuiaManual');
+        guiaInput.value = (pax >= 9) ? 1000 : (pax >= 4) ? 600 : 300;
+        calculate();
+    }
+
+    function initSelector() {
+        const container = document.getElementById('selector-container');
+        container.innerHTML = '';
+        activities.forEach((act, idx) => {
+            container.innerHTML += `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-size:11px; color:white; border-bottom: 1px solid #334155; padding-bottom: 3px;">
+                    <span style="width:220px; font-size:10px;">${act.d}</span>
+                    <select style="width:75px; height:24px; font-size:10px;" onchange="activities[${idx}].day = parseInt(this.value); calculate();">
+                        <option value="0">Excluir</option>
+                        <option value="1">Día 1</option>
+                        <option value="2">Día 2</option>
+                        <option value="3">Día 3</option>
+                        <option value="4">Día 4</option>
+                    </select>
+                </div>`;
+        });
+    }
+
+    function calculate() {
+        const pax = parseInt(document.getElementById('inPax').value) || 1;
+        const tc = parseFloat(document.getElementById('inTC').value) || 7.70;
+        const percF = parseFloat(document.getElementById('inPercF').value) / 100;
+        const percI = parseFloat(document.getElementById('inPercI').value) / 100;
+        const lancha = parseFloat(document.getElementById('inLancha').value) || 0;
+        const guia = parseFloat(document.getElementById('inGuiaManual').value) || 300;
+        const mirador = parseFloat(document.getElementById('inMirador').value) || 25;
+        const valOtas = parseFloat(document.getElementById('inOtas').value) / 100;
+        const useOtas = document.getElementById('checkOtas').checked;
+
+        document.getElementById('outName').innerText = document.getElementById('inClient').value || "---";
+        document.getElementById('outNit').innerText = document.getElementById('inNit').value || "CF";
+        document.getElementById('outDate').innerText = new Date().toLocaleDateString('es-GT');
+        document.getElementById('outPax').innerText = pax;
+        
+        const obs = document.getElementById('inObs').value;
+        const obsDiv = document.getElementById('outObs');
+        if(obs) { obsDiv.style.display = 'block'; obsDiv.innerHTML = "<b>OBSERVACIONES:</b> " + obs; } 
+        else { obsDiv.style.display = 'none'; }
+
+        let costoActividades = 0;
+        const previewBody = document.getElementById('itinerary-preview-body');
+        previewBody.innerHTML = '';
+
+        for (let i = 1; i <= 4; i++) {
+            const dayActs = activities.filter(a => a.day === i);
+            if (dayActs.length > 0) {
+                let list = "<ul style='padding-left:15px; line-height:1.4;'>";
+                dayActs.forEach(a => {
+                    list += `<li>${a.d}</li>`;
+                    costoActividades += (a.p * pax);
+                });
+                if(i === 2 && dayActs.some(a => a.d.includes("Mirador"))) costoActividades += (mirador * pax);
+                list += "</ul>";
+                previewBody.innerHTML += `<tr><td class="day-column">DÍA 0${i}</td><td>${list}</td></tr>`;
+            }
+        }
+
+        let costoBase = costoActividades + guia + lancha;
+        let montoFijo = 12970 * percF;
+        let utilidad = (costoBase + montoFijo) * percI;
+        let subtotal = costoBase + montoFijo + utilidad + (0.33 * tc);
+        
+        let sumatoriaImpuestos = 0.045 + 0.1071 + 0.0446;
+        if (useOtas) sumatoriaImpuestos += valOtas;
+        
+        let factor = 1 - sumatoriaImpuestos; 
+        let finalGTQ = subtotal / (factor <= 0 ? 0.01 : factor);
+
+        document.getElementById('v-final-gtq').innerText = Math.ceil(finalGTQ).toLocaleString('es-GT');
+        document.getElementById('v-pax-gtq').innerText = Math.ceil(finalGTQ / pax).toLocaleString('es-GT');
+        document.getElementById('v-final-usd').innerText = Math.ceil(finalGTQ / tc).toLocaleString('es-GT');
+        document.getElementById('v-pax-usd').innerText = Math.ceil((finalGTQ / tc) / pax).toLocaleString('es-GT');
+
+        const view = document.getElementById('currencyDisplay').value;
+        document.getElementById('resGTQ').style.display = (view === 'usd') ? 'none' : 'block';
+        document.getElementById('resUSD').style.display = (view === 'gtq') ? 'none' : 'block';
+
+        document.getElementById('debug-log').innerHTML = `
+            Costos Directos: Q ${costoBase.toFixed(2)}<br>
+            Monto Fijo: Q ${montoFijo.toFixed(2)}<br>
+            Utilidad: Q ${utilidad.toFixed(2)}<br>
+            Subtotal: Q ${subtotal.toFixed(2)}<br>
+            Factor Fiscal: ${factor.toFixed(4)}
+        `;
+    }
+
+    window.onload = () => { initSelector(); calculate(); };
+</script>
+</body>
+</html>
