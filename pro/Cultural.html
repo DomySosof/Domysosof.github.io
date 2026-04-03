@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cotizador AtiTur - v6.5 High Visibility</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #0F172A; --primary: #10B981; --text-light: #f8fafc; 
+            --card-bg: #1E293B; --border: #334155; --accent: #F59E0B; --panel-blue: #1e3a5a;
+            --c-transp: #3b82f6; --c-food: #f59e0b; --c-tour: #10b981; --c-guia: #8b5cf6; --c-default: #94a3b8;
+            /* Color para inputs prioritarios */
+            --highlight: #b3ff00; 
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-light); height: 100vh; overflow: hidden; }
+        .main-container { display: grid; grid-template-columns: 350px 1fr 380px; gap: 12px; height: 100vh; padding: 12px; }
+        .scroll-panel { background: var(--panel-blue); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; scrollbar-width: thin; }
+        .preview-side { display: flex; flex-direction: column; align-items: center; gap: 12px; overflow-y: auto; }
+        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+        h3 { color: var(--primary); margin-bottom: 10px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+        input, select, textarea { width: 100%; padding: 7px; background: #0f172a; border: 1px solid var(--border); color: white; border-radius: 6px; font-size: 11px; margin-bottom: 4px; outline: none; }
+        label { display: block; font-size: 9px; color: #94a3b8; margin-bottom: 3px; font-weight: 700; }
+        
+        /* ESTILO PARA CAMPOS PRIORITARIOS */
+        .input-priority { 
+            border: 1.5px solid var(--highlight) !important; 
+            box-shadow: 0 0 8px rgba(45, 212, 191, 0.2);
+            color: var(--highlight) !important;
+            font-weight: bold;
+        }
+        .label-priority { color: var(--highlight) !important; }
+
+        .switch-container { display: flex; align-items: center; gap: 8px; background: #1e293b; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border); }
+        .switch { position: relative; display: inline-block; width: 34px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--accent); }
+        input:checked + .slider:before { transform: translateX(14px); }
+        .switch-label { font-size: 9px; font-weight: bold; color: #94a3b8; text-transform: uppercase; }
+
+        .activity-item { padding: 8px; margin-bottom: 6px; background: rgba(0,0,0,0.2); border-radius: 8px; border-left: 4px solid var(--c-default); }
+        .activity-name { font-size: 10.5px; display: block; margin-bottom: 6px; color: #e2e8f0; font-weight: 600; }
+        .day-selector { display: flex; gap: 3px; }
+        .day-btn { flex: 1; height: 26px; border-radius: 5px; border: 1px solid #475569; background: #0f172a; color: #94a3b8; font-size: 9px; cursor: pointer; font-weight: bold; }
+        .day-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .day-btn.none.active { background: #ef4444; border-color: #ef4444; color: white; }
+
+        .audit-group { margin-bottom: 10px; border-bottom: 1px solid #475569; padding-bottom: 6px; }
+        .audit-group-title { font-size: 9px; color: var(--primary); font-weight: bold; margin-bottom: 4px; text-transform: uppercase; }
+        .audit-item { display: flex; justify-content: space-between; margin-bottom: 2px; font-size: 10.5px; }
+        .audit-subtotal { border-top: 1px dashed #555; margin-top: 4px; padding-top: 4px; font-weight: bold; color: #fff; }
+
+        .document-preview, .control-interno-view { 
+            position: relative; width: 8.5in; min-height: 11in; 
+            background-color: white; color: #000; box-shadow: 0 10px 40px rgba(0,0,0,0.5); 
+            display: none; margin-bottom: 20px; flex-shrink: 0;
+            -webkit-print-color-adjust: exact; print-color-adjust: exact;
+        }
+        #client-view { display: block; }
+        .background-overlay {   
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background-image: url('logo.png'); background-size: contain; 
+            background-repeat: no-repeat; background-position: center; z-index: 0; 
+            opacity: 1;
+        }
+        #control-interno-view .background-overlay { display: none; }
+
+        .content-area { position: relative; z-index: 1; padding: 4.5cm 2.5cm 3cm 2.5cm; font-size: 11px; }
+        table { width: 100%; border: 1.5px solid #000; border-collapse: collapse; margin-top: 10px; background-color: rgba(255,255,255,0.7); }
+        th, td { border: 1px solid #000; padding: 6px 10px; text-align: left; color: #000; }
+        ul { list-style: none; }
+        li.act-item { position: relative; padding-left: 15px; margin-bottom: 4px; font-weight: 500; display: flex; justify-content: space-between; }
+        li.act-item span.price-tag { font-weight: bold; color: #444; font-size: 10px; white-space: nowrap; margin-left: 10px; }
+        li.act-item::before { content: "•"; position: absolute; left: 0; font-weight: bold; font-size: 14px; }
+
+        .print-audit-box { margin-top: 20px; border: 1px solid #000; padding: 15px; font-size: 10px; }
+        .print-audit-box h4 { border-bottom: 1px solid #000; margin-bottom: 10px; text-transform: uppercase; }
+
+        /* ARREGLO PARA OBSERVACIONES: ADAPTACIÓN AL MARGEN Y SALTOS DE LÍNEA */
+        #outObs { 
+            margin-top: 15px; 
+            font-style: italic; 
+            border: 1px dashed #ccc; 
+            padding: 10px; 
+            font-size: 10px; 
+            display: none; 
+            width: 100%;
+            word-wrap: break-word;      /* Rompe palabras largas si es necesario */
+            overflow-wrap: break-word;  /* Asegura que el texto no se salga del contenedor */
+            white-space: pre-wrap;      /* Respeta los saltos de línea del textarea */
+            text-align: justify;        /* Opcional: para que se vea más ordenado */
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { overflow: visible; background: white !important; }
+            .main-container { display: block; padding: 0; }
+            .preview-side { overflow: visible; width: 100%; }
+            .document-preview, .control-interno-view { box-shadow: none; margin: 0; display: block; }
+            body.print-client #control-interno-view { display: none !important; }
+            body.print-client #client-view { display: block !important; }
+            body.print-control #client-view { display: none !important; }
+            body.print-control #control-interno-view { display: block !important; color: black !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+    <div class="scroll-panel no-print">
+        <div class="card">
+            <h3>👤 Cliente</h3>
+            <input type="text" id="inClient" placeholder="Nombre del Cliente" oninput="calculate()">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div><label>NIT</label><input type="text" id="inNit" value="CF" oninput="calculate()"></div>
+                <div><label class="label-priority">Pax ★</label><input type="number" id="inPax" value="1" class="input-priority" oninput="updatePax()"></div>
+            </div>
+            <label>Observaciones</label>
+            <textarea id="inObs" rows="3" oninput="calculate()" placeholder="Notas adicionales..."></textarea>
+        </div>
+
+        <div class="card">
+            <h3>🛶 Extras (Q)</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div><label class="label-priority">Guía General ★</label><input type="number" id="inGuiaManual" value="300" class="input-priority" oninput="calculate()"></div>
+                <div><label>Lancha Privada</label><input type="number" id="inLancha" value="0" oninput="calculate()"></div>
+            </div>
+            <label>Mirador (Extra p/p)</label><input type="number" id="inMirador" value="0" oninput="calculate()">
+        </div>
+
+        <div class="card"><h3>📅 Actividades</h3><div id="selector-container"></div></div>
+    </div>
+
+    <div class="preview-side">
+        <div class="no-print" style="display:flex; flex-wrap: wrap; justify-content: center; gap:8px; margin-top:10px; background: var(--card-bg); padding: 10px; border-radius: 12px; border: 1px solid var(--border);">
+            <button onclick="imprimirDocumento('client')" style="padding:8px 12px; background:var(--primary); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">🖨️ ITINERARIO</button>
+            <button onclick="imprimirDocumento('control')" style="padding:8px 12px; background:#6366f1; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">📑 CONTROL</button>
+            
+            <div class="switch-container"><span class="switch-label">Precios</span><label class="switch"><input type="checkbox" id="checkShowPrices" onchange="calculate()"><span class="slider"></span></label></div>
+            <div class="switch-container"><span class="switch-label">Redond.</span><label class="switch"><input type="checkbox" id="checkRound" onchange="calculate()"><span class="slider"></span></label></div>
+            <div class="switch-container"><span class="switch-label">OTAS</span><label class="switch"><input type="checkbox" id="checkOTA" onchange="calculate()"><span class="slider"></span></label></div>
+            
+            <select id="currencyDisplay" onchange="calculate()" style="width: auto; margin-bottom:0; height: 32px; background: var(--primary);">
+                <option value="both">Q / $ (Ambos)</option>
+                <option value="gtq">Solo GTQ</option>
+                <option value="usd">Solo USD</option>
+            </select>
+        </div>
+
+        <div class="document-preview" id="client-view">
+            <div class="background-overlay"></div>
+            <div class="content-area">
+                <div style="text-align:center; color:#27ae60;"><h1 style="font-size: 22px;">SAN JUAN LA LAGUNA</h1><p style="letter-spacing:4px; font-size: 10px;">ITINERARIO PERSONALIZADO</p></div>
+                <div style="display:flex; justify-content:space-between; margin-top:20px; border-bottom: 2px solid #27ae60; padding-bottom:10px;">
+                    <div><strong>CLIENTE:</strong> <span id="outName">---</span><br><strong>NIT:</strong> <span id="outNit">CF</span></div>
+                    <div style="text-align:right;"><strong>FECHA:</strong> <span id="outDate">---</span><br><strong>PERSONAS:</strong> <span id="outPax">1</span></div>
+                </div>
+                <table><thead><tr style="background:#f1f5f9;"><th style="width:80px;">DÍA</th><th>ACTIVIDADES INCLUIDAS</th></tr></thead><tbody id="itinerary-preview-body"></tbody></table>
+                <div id="outObs"></div>
+                <div style="margin-top:auto; text-align:right; border-top:2px solid #27ae60; padding-top:12px;">
+                    <div id="resGTQ"><h2 style="font-size: 24px;">TOTAL: Q <span id="v-final-gtq">0.00</span></h2><p>Por persona: <strong>GTQ <span id="v-pax-gtq">0.00</span></strong></p></div>
+                    <div id="resUSD" style="margin-top:8px; border-top:1px dashed #ccc; padding-top:8px;"><h3 style="color:#555;">TOTAL USD: $ <span id="v-final-usd">0.00</span></h3><p>Por persona: <strong>USD $ <span id="v-pax-usd">0.00</span></strong></p></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="control-interno-view" id="control-interno-view" style="padding: 40px;">
+            <h2 style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 10px; font-size: 18px;">CONTROL INTERNO Y AUDITORÍA</h2>
+            <div id="control-table-container"></div>
+            <div class="print-audit-box">
+                <h4>Desglose Técnico de Auditoría</h4>
+                <div id="print-debug-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="scroll-panel no-print">
+        <div class="card" style="border-color: var(--accent);"><h3 style="color:var(--accent)">📊 Auditoría Maestra</h3><div id="debug-log"></div></div>
+        
+        <div class="card" style="border-left: 4px solid #ef4444;">
+            <h3>⚖️ Carga Impositiva</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div><label>IVA (%)</label><input type="number" id="inIVA" value="12" oninput="calculate()"></div>
+                <div><label>ISR (%)</label><input type="number" id="inISR" value="5" oninput="calculate()"></div>
+            </div>
+            <label class="label-priority">Comisión OTAS (%) ★</label>
+            <input type="number" id="inOTAPerc" value="45" class="input-priority" oninput="calculate()">
+        </div>
+
+        <div class="card">
+            <h3>📈 Configuración Económica</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div><label class="label-priority">T. Cambio ★</label><input type="number" id="inTC" value="7.3" class="input-priority" oninput="calculate()"></div>
+                <div><label class="label-priority">Utilidad % ★</label><input type="number" id="inPercI" value="10" class="input-priority" oninput="calculate()"></div>
+                <div><label class="label-priority">Costo Fijo % ★</label><input type="number" id="inPercF" value="2" class="input-priority" oninput="calculate()"></div>
+                <div><label>Base Costo Fijo (Q)</label><input type="number" id="inBaseFija" value="12970" oninput="calculate()"></div>
+                
+                <div><label>Comisión POS %</label><input type="number" id="inPercPOS" value="5" oninput="calculate()"></div>
+            </div>
+            <label>Ajuste Fijo $</label><input type="number" id="inAjuste" value="0.333" step="0.001" oninput="calculate()">
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentGlobalTotal = 0;
+    let activities = [
+        { d: "Transporte Lacustre público (Panajachel - San Juan)", p: 50, day: 0 },
+        { d: "Transporte Terrestre Privado (Inter-pueblos)", p: 900, day: 0 },
+        { d: "Transporte Lacustre Privado (Día 3)", p: 50, day: 0 },
+        { d: "Transporte Lacustre privado (Retorno)", p: 50, day: 0 },
+        { d: "Transporte Mirador Amanecer (Transporte e ingreso)", p: 30, day: 0 },
+        { d: "Entradas a los lugares para los tours", p: 25, day: 0 },
+        { d: "Alimentación Cena Familiar", p: 75, day: 0 },
+        { d: "Alimentación Desayuno Familiar 1", p: 65, day: 0 },
+        { d: "Alimentación Almuerzo Típico Gastronómico", p: 75, day: 0 },
+        { d: "Alimentación Degustación de café", p: 25, day: 0 },
+        { d: "Alimentación Desayuno Familiar 2", p: 65, day: 0 },
+        { d: "Guía Local (Día 1)", p: 0, day: 0 },
+        { d: "Guías Locales (Amanecer y tour del día)", p: 50, day: 0 },
+        { d: "Recorrido calles pintorescas", p: 0, day: 0 },
+        { d: "Tour de abejas sin aguijón", p: 0, day: 0 },
+        { d: "Tour de Cerveza artesanal", p: 0, day: 0 },
+        { d: "Demostración de tintes y textiles", p: 0, day: 0 },
+        { d: "Ceremonia Maya", p: 200, day: 0 },
+        { d: "Visita galería de arte local", p: 0, day: 0 },
+        { d: "Tour de Cacao", p: 0, day: 0 },
+        { d: "Mirador y sesión de fotos (Guía)", p: 25, day: 0 },
+        { d: "Temazcal", p: 175, day: 0 },
+        { d: "Tour Santiago Atitlán", p: 25, day: 0 },
+        { d: "Guías Locales (Día 3)", p: 50, day: 0 },
+        { d: "Mirador San Antonio Palopó", p: 0, day: 0 },
+        { d: "Almuerzo (Día 3)", p: 75, day: 0 },
+        { d: "Canopy San Pedro La Laguna", p: 150, day: 0 },
+        { d: "Tour San Pedro (Iglesia)", p: 25, day: 0 },
+        { d: "Guía por una hora (Día 4)", p: 20 , day: 0 }
+    ];
+
+    function getColor(text) {
+        text = text.toLowerCase();
+        if (text.includes("transporte")) return "var(--c-transp)";
+        if (text.includes("alimentación") || text.includes("desayuno") || text.includes("cena")) return "var(--c-food)";
+        if (text.includes("tour") || text.includes("ceremonia") || text.includes("temazcal")) return "var(--c-tour)";
+        if (text.includes("guía")) return "var(--c-guia)";
+        return "var(--c-default)";
+    }
+
+    function initSelector() {
+        const container = document.getElementById('selector-container');
+        container.innerHTML = '';
+        activities.forEach((act, idx) => {
+            const item = document.createElement('div');
+            item.className = 'activity-item';
+            item.style.borderLeftColor = getColor(act.d);
+            const getActive = (d) => act.day === d ? 'active' : '';
+            item.innerHTML = `<span class="activity-name">${act.d} (Q${act.p})</span><div class="day-selector">
+                <button class="day-btn none ${getActive(0)}" onclick="setDay(${idx},0)">✕</button>
+                ${[1,2,3,4].map(d => `<button class="day-btn ${getActive(d)}" onclick="setDay(${idx},${d})">${d}</button>`).join('')}
+            </div>`;
+            container.appendChild(item);
+        });
+    }
+
+    function setDay(idx, day) { activities[idx].day = day; initSelector(); calculate(); }
+    
+    function updatePax() { 
+        const pax = parseInt(document.getElementById('inPax').value) || 1; 
+        document.getElementById('inGuiaManual').value = (pax >= 9) ? 1000 : (pax >= 4) ? 600 : 300; 
+        calculate(); 
+    }
+
+    function calculate() {
+        const pax = parseInt(document.getElementById('inPax').value) || 1;
+        const tc = parseFloat(document.getElementById('inTC').value) || 7.3;
+        const pFijoP = parseFloat(document.getElementById('inPercF').value) || 0;
+        const baseFijaManual = parseFloat(document.getElementById('inBaseFija').value) || 0; 
+        const pUtilP = parseFloat(document.getElementById('inPercI').value) || 0;
+        const pPOSPerc = parseFloat(document.getElementById('inPercPOS').value) || 0;
+        const pIVA = parseFloat(document.getElementById('inIVA').value) || 12;
+        const pISR = parseFloat(document.getElementById('inISR').value) || 5;
+        const checkOTA = document.getElementById('checkOTA').checked;
+        const showPrices = document.getElementById('checkShowPrices').checked;
+        const pOTAPerc = parseFloat(document.getElementById('inOTAPerc').value) || 0;
+        const shouldRound = document.getElementById('checkRound').checked;
+        const ajusteUSD = parseFloat(document.getElementById('inAjuste').value) || 0;
+        const montoAjusteGTQ = ajusteUSD * tc;
+        const displayMode = document.getElementById('currencyDisplay').value;
+
+        let costoActTotal = 0; let ctrlRows = ''; 
+        activities.filter(a => a.day > 0).forEach(a => {
+            costoActTotal += (a.p * pax);
+            ctrlRows += `<tr><td>${a.d}</td><td>Q${a.p.toFixed(2)}</td><td>Q${(a.p*pax).toFixed(2)}</td></tr>`;
+        });
+
+        const guiaExtra = parseFloat(document.getElementById('inGuiaManual').value) || 0;
+        const lanchaExtra = parseFloat(document.getElementById('inLancha').value) || 0;
+        const miradorExtraUnit = parseFloat(document.getElementById('inMirador').value) || 0;
+        const miradorExtraTotal = miradorExtraUnit * pax;
+        
+        const costoBase = costoActTotal + guiaExtra + lanchaExtra + miradorExtraTotal;
+        const montoFijo = baseFijaManual * (pFijoP / 100); 
+        const utilidad = (costoBase + montoFijo + montoAjusteGTQ) * (pUtilP / 100);
+        const subtotalOperativo = costoBase + montoFijo + utilidad + montoAjusteGTQ;
+
+        const ivaEfectivo = (pIVA / (100 + pIVA)); 
+        const isrEfectivo = (pISR / 100) * (1 - ivaEfectivo);
+        const otaFactor = checkOTA ? (pOTAPerc / 100) : 0;
+        const divisor = 1 - (ivaEfectivo + isrEfectivo + (pPOSPerc / 100) + otaFactor);
+        
+        let finalGTQ = subtotalOperativo / (divisor || 0.01);
+        let finalUSD = finalGTQ / tc;
+        let diffRedondeoGTQ = 0;
+
+        if(shouldRound) {
+            const roundedUSD_pax = Math.ceil(finalUSD / pax);
+            diffRedondeoGTQ = (roundedUSD_pax * pax * tc) - finalGTQ;
+            finalUSD = roundedUSD_pax * pax;
+            finalGTQ = finalUSD * tc;
+        }
+
+        currentGlobalTotal = finalGTQ;
+
+        const getPriceTag = (valTotal) => {
+            if (!showPrices) return "";
+            if (displayMode === 'usd') return `<span class="price-tag">$ ${(valTotal/tc).toFixed(2)}</span>`;
+            if (displayMode === 'both') return `<span class="price-tag">Q ${valTotal.toFixed(2)} ($ ${(valTotal/tc).toFixed(2)})</span>`;
+            return `<span class="price-tag">Q ${valTotal.toFixed(2)}</span>`;
+        };
+
+        document.getElementById('v-final-gtq').innerText = finalGTQ.toLocaleString('es-GT', {minimumFractionDigits:2});
+        document.getElementById('v-pax-gtq').innerText = (finalGTQ/pax).toLocaleString('es-GT', {minimumFractionDigits:2});
+        document.getElementById('v-final-usd').innerText = finalUSD.toLocaleString('en-US', {minimumFractionDigits:shouldRound?0:2});
+        document.getElementById('v-pax-usd').innerText = (finalUSD/pax).toLocaleString('en-US', {minimumFractionDigits:shouldRound?0:2});
+
+        const resGTQ = document.getElementById('resGTQ');
+        const resUSD = document.getElementById('resUSD');
+        if (displayMode === 'gtq') { resGTQ.style.display = 'block'; resUSD.style.display = 'none'; }
+        else if (displayMode === 'usd') { resGTQ.style.display = 'none'; resUSD.style.display = 'block'; resUSD.style.borderTop = 'none'; }
+        else { resGTQ.style.display = 'block'; resUSD.style.display = 'block'; resUSD.style.borderTop = '1px dashed #ccc'; }
+
+        const auditHTML = `
+            <div class="audit-group"><div class="audit-group-title">1. Costos Directos</div><div class="audit-item"><span>Costo Base:</span><span>Q ${costoBase.toFixed(2)}</span></div></div>
+            <div class="audit-group">
+                <div class="audit-group-title">2. Márgenes y Ajustes</div>
+                <div class="audit-item"><span>C. Fijos (${pFijoP}% de Q${baseFijaManual}):</span><span>Q ${montoFijo.toFixed(2)}</span></div>
+                <div class="audit-item"><span>Utilidad (${pUtilP}%):</span><span>Q ${utilidad.toFixed(2)}</span></div>
+                <div class="audit-item"><span>Ajuste Fijo POS:</span><span>Q ${montoAjusteGTQ.toFixed(2)}</span></div>
+                <div class="audit-item"><span>Factor Redondeo:</span><span>Q ${diffRedondeoGTQ.toFixed(2)}</span></div>
+                <div class="audit-item audit-subtotal"><span>Subtotal Neto:</span><span>Q ${(subtotalOperativo + diffRedondeoGTQ).toFixed(2)}</span></div>
+            </div>
+            <div class="audit-group">
+                <div class="audit-group-title">3. Tributación y Pasarelas</div>
+                <div class="audit-item"><span>IVA:</span><span>Q ${(finalGTQ * ivaEfectivo).toFixed(2)}</span></div>
+                <div class="audit-item"><span>ISR:</span><span>Q ${(finalGTQ * isrEfectivo).toFixed(2)}</span></div>
+                <div class="audit-item"><span>Comisión POS:</span><span>Q ${(finalGTQ * (pPOSPerc / 100)).toFixed(2)}</span></div>
+                ${checkOTA ? `<div class="audit-item" style="color:#3b82f6;"><span>OTAS:</span><span>Q ${(finalGTQ * otaFactor).toFixed(2)}</span></div>` : ''}
+            </div>
+            <div class="audit-group" style="border:none;">
+                <div class="audit-item" style="color:#4739ea; font-weight:bold;"><span>FACTOR DIVISOR:</span><span>${divisor.toFixed(4)}</span></div>
+                <div class="audit-item" style="font-size:13px; font-weight:bold; color:var(--accent); border-top:1px solid #555; margin-top:5px; padding-top:5px;"><span>VENTA FINAL:</span><span>Q ${finalGTQ.toLocaleString('es-GT', {minimumFractionDigits:2})}</span></div>
+            </div>`;
+
+        document.getElementById('debug-log').innerHTML = auditHTML;
+        document.getElementById('print-debug-content').innerHTML = auditHTML;
+
+        let itBody = '';
+        for (let i = 1; i <= 4; i++) {
+            const dayActs = activities.filter(a => a.day === i);
+            let dayList = dayActs.map(a => `<li class="act-item"><div>${a.d}</div>${getPriceTag(a.p * pax)}</li>`).join('');
+            
+            if (i === 1) {
+                if (guiaExtra > 0) dayList += `<li class="act-item" style="color:var(--c-guia);"><div>Guía de Turismo General</div>${getPriceTag(guiaExtra)}</li>`;
+                if (lanchaExtra > 0) dayList += `<li class="act-item" style="color:var(--c-transp);"><div>Servicio de Lancha Privada</div>${getPriceTag(lanchaExtra)}</li>`;
+                if (miradorExtraTotal > 0) dayList += `<li class="act-item"><div>Ingreso a Mirador</div>${getPriceTag(miradorExtraTotal)}</li>`;
+            }
+
+            if (dayList.length > 0) itBody += `<tr><td style="text-align:center;">DÍA ${i}</td><td><ul>${dayList}</ul></td></tr>`;
+        }
+        document.getElementById('itinerary-preview-body').innerHTML = itBody;
+        document.getElementById('outName').innerText = document.getElementById('inClient').value || "---";
+        document.getElementById('outNit').innerText = document.getElementById('inNit').value || "CF";
+        document.getElementById('outPax').innerText = pax;
+        document.getElementById('outDate').innerText = new Date().toLocaleDateString('es-GT');
+        
+        // Manejo de Observaciones
+        const obsValue = document.getElementById('inObs').value;
+        const outObs = document.getElementById('outObs');
+        if (obsValue) {
+            outObs.innerText = obsValue;
+            outObs.style.display = 'block';
+        } else {
+            outObs.style.display = 'none';
+        }
+        
+        document.getElementById('control-table-container').innerHTML = `<table><thead><tr style="background:#eee"><th>Descripción</th><th>C. Unit</th><th>C. Total</th></tr></thead><tbody>${ctrlRows}<tr><td>Guía General</td><td>-</td><td>Q${guiaExtra.toFixed(2)}</td></tr><tr><td>Lancha Privada</td><td>-</td><td>Q${lanchaExtra.toFixed(2)}</td></tr><tr><td>Mirador</td><td>Q${miradorExtraUnit.toFixed(2)}</td><td>Q${miradorExtraTotal.toFixed(2)}</td></tr><tr style="font-weight:bold; background:#f9f9f9;"><td>VENTA FINAL</td><td>-</td><td>Q${finalGTQ.toLocaleString('es-GT', {minimumFractionDigits:2})}</td></tr></tbody></table>`;
+    }
+
+    function imprimirDocumento(tipo) { 
+        const nitInput = document.getElementById('inNit').value.trim().toUpperCase();
+        if (currentGlobalTotal > 2500 && (nitInput === "CF" || nitInput === "")) {
+            alert("⚠️ ALERTA CONTABLE:\n\nMonto superior a Q2,500.00 requiere NIT válido.");
+            document.getElementById('inNit').focus();
+            return;
+        }
+        document.body.className = 'print-' + tipo; 
+        setTimeout(() => window.print(), 200); 
+    }
+    window.onload = () => { initSelector(); calculate(); };
+</script>
+</body>
+</html>
