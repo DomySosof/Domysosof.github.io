@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cotizador AtiTur - v8.0</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #0F172A; 
+            --primary: #10B981; 
+            --text-light: #f8fafc; 
+            --card-bg: #1E293B; 
+            --border: #334155; 
+            --accent: #F59E0B; 
+            --panel-blue: #1e3a5a;
+            --c-transp: #3b82f6; 
+            --c-food: #f59e0b; 
+            --c-tour: #10b981; 
+            --c-guia: #8b5cf6; 
+            --c-default: #94a3b8;
+            --highlight: #b3ff00; 
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-light); height: 100vh; overflow: hidden; }
+
+        .main-container { 
+            display: grid; 
+            grid-template-columns: 350px 1fr 380px; 
+            gap: 12px; 
+            height: 100vh; 
+            padding: 12px; 
+        }
+        .scroll-panel { 
+            background: var(--panel-blue); 
+            border-radius: 12px; 
+            padding: 12px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+            overflow-y: auto; 
+            scrollbar-width: thin; 
+        }
+        .preview-side { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 12px; 
+            overflow-y: auto; 
+        }
+
+        .card { 
+            background: var(--card-bg); 
+            border: 1px solid var(--border); 
+            border-radius: 10px; 
+            padding: 12px; 
+        }
+        h3 { color: var(--primary); margin-bottom: 10px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+        input, select, textarea { 
+            width: 100%; padding: 7px; background: #0f172a; 
+            border: 1px solid var(--border); color: white; border-radius: 6px; 
+            font-size: 11px; margin-bottom: 4px; outline: none; 
+        }
+        label { display: block; font-size: 9px; color: #94a3b8; margin-bottom: 3px; font-weight: 700; }
+
+        .input-priority { 
+            border: 1.5px solid var(--highlight) !important; 
+            box-shadow: 0 0 8px rgba(45, 212, 191, 0.2);
+            color: var(--highlight) !important;
+            font-weight: bold;
+        }
+        .label-priority { color: var(--highlight) !important; }
+
+        .switch-container { 
+            display: flex; align-items: center; gap: 8px; 
+            background: #1e293b; padding: 5px 12px; 
+            border-radius: 20px; border: 1px solid var(--border); 
+        }
+        .switch { position: relative; display: inline-block; width: 34px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { 
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; 
+            background-color: #334155; transition: .4s; border-radius: 34px; 
+        }
+        .slider:before { 
+            position: absolute; content: ""; height: 14px; width: 14px; 
+            left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; 
+        }
+        input:checked + .slider { background-color: var(--accent); }
+        input:checked + .slider:before { transform: translateX(14px); }
+        .switch-label { font-size: 9px; font-weight: bold; color: #94a3b8; text-transform: uppercase; }
+
+        /* ============================================================
+           ACTIVIDADES - SECCIONES POR TIPO
+           ============================================================ */
+        .act-section-header {
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin: 8px 0 4px 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .act-section-header.selected-header {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--primary);
+            border-left: 3px solid var(--primary);
+        }
+        .act-section-header.transp-header {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+            border-left: 3px solid #3b82f6;
+        }
+        .act-section-header.food-header {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+            border-left: 3px solid #f59e0b;
+        }
+        .act-section-header.tour-header {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            border-left: 3px solid #10b981;
+        }
+        .act-section-header.guia-header {
+            background: rgba(139, 92, 246, 0.1);
+            color: #8b5cf6;
+            border-left: 3px solid #8b5cf6;
+        }
+        .act-section-header.other-header {
+            background: rgba(148, 163, 184, 0.1);
+            color: #94a3b8;
+            border-left: 3px solid #94a3b8;
+        }
+
+        .activity-item { 
+            padding: 8px; margin-bottom: 5px; background: rgba(0,0,0,0.2); 
+            border-radius: 8px; border-left: 4px solid var(--c-default); 
+            transition: background 0.15s;
+        }
+        /* Actividades seleccionadas: fondo ligeramente destacado */
+        .activity-item.is-active {
+            background: rgba(16, 185, 129, 0.07);
+            box-shadow: 0 0 0 1px rgba(16,185,129,0.18);
+        }
+        .activity-name { font-size: 10.5px; display: block; margin-bottom: 6px; color: #e2e8f0; font-weight: 600; }
+        .day-selector { display: flex; gap: 3px; }
+        .day-btn { 
+            flex: 1; height: 26px; border-radius: 5px; border: 1px solid #475569; 
+            background: #0f172a; color: #94a3b8; font-size: 9px; cursor: pointer; font-weight: bold; 
+        }
+        .day-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .day-btn.none.active { background: #ef4444; border-color: #ef4444; color: white; }
+
+        /* Badge de día activo en el nombre */
+        .active-badge {
+            display: inline-block;
+            background: var(--primary);
+            color: #000;
+            font-size: 8px;
+            font-weight: 900;
+            padding: 1px 5px;
+            border-radius: 10px;
+            margin-left: 4px;
+            vertical-align: middle;
+        }
+
+        /* Guia auto badge */
+        .guia-auto-badge {
+            display: inline-block;
+            background: #f59e0b;
+            color: #000;
+            font-size: 7px;
+            font-weight: 900;
+            padding: 1px 5px;
+            border-radius: 10px;
+            margin-left: 4px;
+            vertical-align: middle;
+        }
+
+        .audit-group { margin-bottom: 10px; border-bottom: 1px solid #475569; padding-bottom: 6px; }
+        .audit-group-title { font-size: 9px; color: var(--primary); font-weight: bold; margin-bottom: 4px; text-transform: uppercase; }
+        .audit-item { display: flex; justify-content: space-between; margin-bottom: 2px; font-size: 10.5px; }
+        .audit-subtotal { border-top: 1px dashed #555; margin-top: 4px; padding-top: 4px; font-weight: bold; color: #fff; }
+
+        .document-preview, .control-interno-view { 
+            position: relative; width: 8.5in; min-height: 11in; 
+            background-color: white; color: #000; box-shadow: 0 10px 40px rgba(0,0,0,0.5); 
+            display: none; margin-bottom: 20px; flex-shrink: 0;
+            -webkit-print-color-adjust: exact; print-color-adjust: exact;
+        }
+        #client-view { display: block; }
+        .background-overlay {   
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background-image: url('logo.png'); background-size: contain; 
+            background-repeat: no-repeat; background-position: center; z-index: 0; opacity: 1;
+        }
+        #control-interno-view .background-overlay { display: none; }
+        .content-area { position: relative; z-index: 1; padding: 4.5cm 2.5cm 3cm 2.5cm; font-size: 11px; }
+        
+        table { width: 100%; border: 1.5px solid #000; border-collapse: collapse; margin-top: 10px; background-color: rgba(255,255,255,0.7); }
+        th, td { border: 1px solid #000; padding: 6px 10px; text-align: left; color: #000; }
+        ul { list-style: none; }
+        li.act-item { 
+            position: relative; padding-left: 15px; margin-bottom: 4px; 
+            font-weight: 500; display: flex; justify-content: space-between; 
+        }
+        li.act-item span.price-tag { font-weight: bold; color: #444; font-size: 10px; white-space: nowrap; margin-left: 10px; }
+        li.act-item::before { content: "•"; position: absolute; left: 0; font-weight: bold; font-size: 14px; }
+
+        .print-audit-box { margin-top: 20px; border: 1px solid #000; padding: 15px; font-size: 10px; }
+        .print-audit-box h4 { border-bottom: 1px solid #000; margin-bottom: 10px; text-transform: uppercase; }
+
+        #outObs { 
+            margin-top: 15px; font-style: italic; border: 1px dashed #ccc; 
+            padding: 10px; font-size: 10px; display: none; width: 100%;
+            word-wrap: break-word; overflow-wrap: break-word;
+            white-space: pre-wrap; text-align: justify; 
+        }
+
+        #fab-paquetes {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #7c3aed, #5b21b6);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 10px 22px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(124,58,237,0.6);
+            letter-spacing: 0.5px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        #fab-paquetes:hover { transform: translateX(-50%) scale(1.06); box-shadow: 0 6px 28px rgba(124,58,237,0.8); }
+
+        #modal-paquetes {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.75);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        #modal-paquetes.open { display: flex; }
+        .modal-box {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 14px;
+            padding: 20px;
+            width: 560px;
+            max-width: 95vw;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-box h2 { color: #a78bfa; font-size: 14px; margin-bottom: 14px; letter-spacing: 1px; text-transform: uppercase; }
+        .paquete-btn {
+            width: 100%;
+            margin-bottom: 8px;
+            padding: 10px 14px;
+            background: #0f172a;
+            border: 1px solid #475569;
+            border-radius: 8px;
+            color: white;
+            font-size: 11px;
+            cursor: pointer;
+            text-align: left;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .paquete-btn:hover { background: #1e3a5a; border-color: #7c3aed; }
+        .paquete-btn.selected { border-color: var(--primary); background: #052e16; }
+        .paquete-btn .pkg-title { font-weight: bold; font-size: 12px; color: #a78bfa; }
+        .paquete-btn .pkg-acts { font-size: 10px; color: #94a3b8; margin-top: 3px; }
+        .modal-close { 
+            margin-top: 10px; width: 100%; padding: 8px; background: #ef4444; 
+            border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; 
+        }
+
+        .pkg-config { 
+            font-size: 9px; color: #7c3aed; margin-top: 4px; font-style: italic; 
+        }
+        .pkg-config-comidas { 
+            font-size: 9px; color: #f59e0b; margin-top: 2px; font-style: italic; 
+        }
+
+        .input-guia-disabled {
+            border: 1.5px solid #ef4444 !important;
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.35) !important;
+            color: #ef4444 !important;
+            font-weight: bold;
+            opacity: 0.7;
+        }
+        .label-guia-disabled { color: #ef4444 !important; }
+        .guia-warning {
+            font-size: 9px; color: #ef4444; font-weight: bold;
+            margin-top: 2px; margin-bottom: 4px; display: none;
+        }
+
+        /* Regla guía auto info */
+        .guia-rule-info {
+            font-size: 9px; color: #f59e0b; margin-top: 2px; margin-bottom: 4px;
+            padding: 4px 8px; background: rgba(245,158,11,0.08); border-radius: 4px;
+            border-left: 2px solid #f59e0b;
+        }
+
+        .copyright-footer {
+            position: fixed; right: 30px; bottom: 15px; 
+            font-size: 0.60rem; margin: 0; 
+            color: #94a3b8;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { overflow: visible; background: white !important; }
+            .main-container { display: block; padding: 0; }
+            .preview-side { overflow: visible; width: 100%; }
+            .document-preview, .control-interno-view { box-shadow: none; margin: 0; display: block; }
+            body.print-client #control-interno-view { display: none !important; }
+            body.print-client #client-view { display: block !important; }
+            body.print-control #client-view { display: none !important; }
+            body.print-control #control-interno-view { display: block !important; color: black !important; }
+            #fab-paquetes { display: none !important; }
+            #modal-paquetes { display: none !important; }
+            .copyright-footer { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+
+    <!-- COLUMNA IZQUIERDA -->
+    <div class="scroll-panel no-print">
+
+        <div class="card">
+            <h3>👤 Cliente</h3>
+            <input type="text" id="inClient" placeholder="Nombre del Cliente" oninput="calculate()">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div><label>NIT</label><input type="text" id="inNit" value="CF" oninput="calculate()"></div>
+                <div><label class="label-priority">Pax ★</label><input type="number" id="inPax" value="1" class="input-priority" oninput="updatePax()"></div>
+            </div>
+            <label>Observaciones</label>
+            <textarea id="inObs" rows="3" oninput="calculate()" placeholder="Notas adicionales..."></textarea>
+        </div>
+
+        <div class="card">
+            <h3>🛶 Extras (Q)</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div>
+                    <label class="label-priority">Guía General ★ <span id="guia-rule-badge" class="guia-auto-badge">AUTO</span></label>
+                    <input type="number" id="inGuiaManual" value="300" class="input-priority" oninput="calculate()">
+                    <div class="guia-rule-info" id="guia-rule-info">📋 &lt;4 pax → Q300 · ≥4 pax → Q450</div>
+                </div>
+                <div><label>Lancha Privada</label><input type="number" id="inLancha" value="0" oninput="calculate()"></div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div>
+                    <label id="labelAlmuerzoGuia">🍽️ Almuerzo Guía (Q)</label>
+                    <input type="number" id="inAlmuerzoGuia" value="65" oninput="calculate()">
+                </div>
+                <div>
+                    <label id="labelDesayunoGuia">🥞 Desayuno Guía (Q)</label>
+                    <input type="number" id="inDesayunoGuia" value="35" oninput="calculate()">
+                </div>
+            </div>
+            <div id="guiaWarning" class="guia-warning">⚠️ PAX ≥ 4: Guía no se cobra al cliente</div>
+            <label>Mirador (Extra p/p)</label>
+            <input type="number" id="inMirador" value="0" oninput="calculate()">
+        </div>
+
+        <div class="card">
+            <h3>📅 Actividades</h3>
+            <div id="selector-container"></div>
+        </div>
+    </div>
+
+    <!-- COLUMNA CENTRAL -->
+    <div class="preview-side">
+        <div class="no-print" style="display:flex; flex-wrap: wrap; justify-content: center; gap:8px; margin-top:10px; background: var(--card-bg); padding: 10px; border-radius: 12px; border: 1px solid var(--border);">
+            <button onclick="imprimirDocumento('client')" style="padding:8px 12px; background:var(--primary); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">🖨️ ITINERARIO</button>
+            <button onclick="imprimirDocumento('control')" style="padding:8px 12px; background:#6366f1; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">📑 CONTROL</button>
+            <div class="switch-container">
+                <span class="switch-label">Precios</span>
+                <label class="switch"><input type="checkbox" id="checkShowPrices" onchange="calculate()"><span class="slider"></span></label>
+            </div>
+            <div class="switch-container">
+                <span class="switch-label">Redond.</span>
+                <label class="switch"><input type="checkbox" id="checkRound" checked onchange="calculate()"><span class="slider"></span></label>
+            </div>
+            <div class="switch-container">
+                <span class="switch-label">OTAS</span>
+                <label class="switch"><input type="checkbox" id="checkOTA" checked onchange="calculate()"><span class="slider"></span></label>
+            </div>
+            <select id="currencyDisplay" onchange="calculate()" style="width: auto; margin-bottom:0; height: 32px; background: var(--primary);">
+                <option value="both">Q / $ (Ambos)</option>
+                <option value="gtq">Solo GTQ</option>
+                <option value="usd">Solo USD</option>
+            </select>
+        </div>
+
+        <div class="document-preview" id="client-view">
+            <div class="background-overlay"></div>
+            <div class="content-area">
+                <div style="text-align:center; color:#0d0f0e;">
+                    <h1 style="font-size: 22px;">SAN JUAN LA LAGUNA</h1>
+                    <p style="letter-spacing:4px; font-size: 10px; color:#555;">ITINERARIO PERSONALIZADO</p>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-top:20px; border-bottom: 2px solid #27ae60; padding-bottom:10px;">
+                    <div><strong>CLIENTE:</strong> <span id="outName">---</span><br><strong>NIT:</strong> <span id="outNit">CF</span></div>
+                    <div style="text-align:right;"><strong>FECHA:</strong> <span id="outDate">---</span><br><strong>PERSONAS:</strong> <span id="outPax">1</span></div>
+                </div>
+                <table>
+                    <thead><tr style="background:#f1f5f9;"><th style="width:80px;">DÍA</th><th>ACTIVIDADES INCLUIDAS</th></tr></thead>
+                    <tbody id="itinerary-preview-body"></tbody>
+                </table>
+                <div id="outObs"></div>
+                <div style="margin-top:auto; text-align:right; border-top:2px solid #27ae60; padding-top:12px;">
+                    <div id="resGTQ"><h2 style="font-size: 24px;">TOTAL: Q <span id="v-final-gtq">0.00</span></h2><p style="color:#555;">Por persona: <strong>GTQ <span id="v-pax-gtq">0.00</span></strong></p></div>
+                    <div id="resUSD" style="margin-top:8px; border-top:1px dashed #ccc; padding-top:8px;"><h3 style="color:#555;">TOTAL USD: $ <span id="v-final-usd">0.00</span></h3><p style="color:#555;">Por persona: <strong>USD $ <span id="v-pax-usd">0.00</span></strong></p></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="control-interno-view" id="control-interno-view" style="padding: 40px;">
+            <h2 style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 10px; font-size: 18px;">CONTROL INTERNO Y AUDITORÍA</h2>
+            <div id="control-table-container"></div>
+            <div class="print-audit-box">
+                <h4>Desglose Técnico de Auditoría</h4>
+                <div id="print-debug-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- COLUMNA DERECHA -->
+    <div class="scroll-panel no-print">
+        <div class="card" style="border-color: var(--accent);">
+            <h3 style="color:var(--accent)">📊 Auditoría Maestra</h3>
+            <div id="debug-log"></div>
+        </div>
+        <div class="card" style="border-left: 4px solid #ef4444;">
+            <h3>⚖️ Carga Impositiva</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div><label>IVA (%)</label><input type="number" id="inIVA" value="12" oninput="calculate()"></div>
+                <div><label>ISR (%)</label><input type="number" id="inISR" value="5" oninput="calculate()"></div>
+            </div>
+            <label class="label-priority">Comisión OTAS (%) ★</label>
+            <input type="number" id="inOTAPerc" value="45" class="input-priority" oninput="calculate()">
+        </div>
+        <div class="card">
+            <h3>📈 Configuración Económica</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div><label class="label-priority">T. Cambio ★</label><input type="number" id="inTC" value="7.3" class="input-priority" oninput="calculate()"></div>
+                <div><label class="label-priority">Utilidad % ★</label><input type="number" id="inPercI" value="10" class="input-priority" oninput="calculate()"></div>
+                <div><label class="label-priority">Costo Fijo % ★</label><input type="number" id="inPercF" value="2" class="input-priority" oninput="calculate()"></div>
+                <div><label>Base Costo Fijo (Q)</label><input type="number" id="inBaseFija" value="12970" oninput="calculate()"></div>
+                <div><label>Comisión POS %</label><input type="number" id="inPercPOS" value="5" oninput="calculate()"></div>
+            </div>
+            <label>Ajuste Fijo $</label>
+            <input type="number" id="inAjuste" value="0.333" step="0.001" oninput="calculate()">
+        </div>
+    </div>
+</div>
+
+<button id="fab-paquetes" class="no-print" onclick="abrirModalPaquetes()">
+    🎒 Paquetes
+</button>
+
+<div id="modal-paquetes">
+    <div class="modal-box">
+        <h2>🎒 Paquetes Predefinidos</h2>
+        <p style="font-size:10px; color:#64748b; margin-bottom:12px;">
+            Haz clic para activar/desactivar. Las actividades se asignan automáticamente.<br>
+            Si ya están seleccionadas, se <strong style="color:#ef4444">deseleccionan</strong> y se restauran los valores por defecto.
+        </p>
+        <div id="lista-paquetes"></div>
+        <button class="modal-close" onclick="cerrarModalPaquetes()">✕ Cerrar</button>
+    </div>
+</div>
+
+<span class="copyright-footer no-print">Copyright © 2026 Ku</span>
+
+<script>
+    /* ============================================================
+       ESTADO GLOBAL
+       ============================================================ */
+    let currentGlobalTotal = 0;
+
+    /* ============================================================
+       LISTA DE ACTIVIDADES
+       fixedCost: true = el precio NO se multiplica por pax (costo fijo total)
+       ============================================================ */
+    let activities = [
+        { d: "Transporte Lacustre público (Panajachel - San Juan)", p: 50, day: 0 },
+        { d: "Transporte Terrestre Privado (Inter-pueblos)", p: 900, day: 0 },
+        { d: "Transporte Lacustre Publica (Día 3)", p: 50, day: 0 },
+        { d: "Transporte Lacustre Publica (Retorno)", p: 50, day: 0 },
+        { d: "Transporte Mirador ", p: 30, day: 0 },
+        { d: "Entradas a los lugares para los tours", p: 25, day: 0 },
+        { d: "Alimentación Cena Familiar", p: 75, day: 0 },
+        { d: "Alimentación Desayuno Familiar 1", p: 65, day: 0 },
+        { d: "Alimentación Almuerzo Típico Gastronómico", p: 75, day: 0 },
+        { d: "Alimentación Degustación de café", p: 25, day: 0 },
+        { d: "Alimentación Desayuno Familiar 2", p: 65, day: 0 },
+        { d: "Tour de pesca Artesanal", p: 125, day: 0 },
+        { d: "Tour de Siembra de Tul", p: 125, day: 0 },
+        { d: "Demostración de artesania con Tul", p: 100, day: 0 },
+        { d: "Servicio de tuk tuk", p: 40, day: 0 },
+        { d: "Refacción", p: 35, day: 0 },
+        { d: "Guía Local (Día 1)", p: 0, day: 0 },
+        { d: "Guías Locales (Amanecer y tour del día)", p: 50, day: 0 },
+        { d: "Recorrido calles pintorescas", p: 0, day: 0 },
+        { d: "Experiencia Gastronomico con una familia Local", p: 100, day: 0 },
+        { d: "Tour de abejas sin aguijón", p: 0, day: 0 },
+        { d: "Tour de Cerveza artesanal", p: 0, day: 0 },
+        { d: "Demostración de tintes y textiles", p: 0, day: 0 },
+        { d: "Ceremonia Maya", p: 200, day: 0 },
+        { d: "Visita galería de arte local", p: 0, day: 0 },
+        { d: "Tour de Cacao", p: 0, day: 0 },
+        { d: "Mirador y sesión de fotos (Guía)", p: 25, day: 0 },
+        { d: "Temazcal", p: 175, day: 0 },
+        { d: "Tour Santiago Atitlán", p: 25, day: 0 },
+        { d: "Guías Locales (Día 3)", p: 50, day: 0 },
+        { d: "Mirador San Antonio Palopó", p: 0, day: 0 },
+        { d: "Almuerzo (Día 3)", p: 75, day: 0 },
+        { d: "Canopy San Pedro La Laguna", p: 150, day: 0 },
+        { d: "Tour San Pedro (Iglesia)", p: 25, day: 0 },
+        { d: "Guía por una hora (Día 4)", p: 20, day: 0 },
+        /* ─── NUEVA ACTIVIDAD FIJA ─── */
+        { d: "Guía", p: 600, day: 0, fixedCost: true }
+    ];
+
+    /* ============================================================
+       PAQUETES PREDEFINIDOS
+       ─────────────────────────────────────────────────────────────
+       reglasGuia: array de tramos para el Guía General.
+         Formato: [ { desde: N, hasta: M, valor: Q }, ... ]
+         - "desde" es INCLUSIVO, "hasta" es INCLUSIVO (Infinity = sin límite)
+         - Se evalúan en orden; se aplica el primer tramo que contenga el pax actual.
+         - Ejemplo Tour Cultural:  1-3 → Q300 | 4-10 → Q450 | 11+ → Q600
+       ─────────────────────────────────────────────────────────────
+       PARA MODIFICAR: solo edita los arrays reglasGuia de cada paquete.
+       ============================================================ */
+
+    // Regla por defecto cuando NO hay paquete activo
+    const REGLAS_GUIA_DEFAULT = [
+        { desde: 1,  hasta: 3,        valor: 300 },
+        { desde: 4,  hasta: Infinity,  valor: 450 }
+    ];
+
+    // Paquete activo actualmente (índice o null)
+    let paqueteActivo = null;
+
+    const PAQUETES = [
+        {
+            nombre: "Tour Cultural",
+            icono: "🏛️",
+            descripcion: "Ceremonia Maya + Demostración de tintes y textiles",
+            actividades: [23, 22],
+            dia: 1,
+            config: { utilidad: 12, costoFijo: 2, comisionPOS: 5, otaPerc: 15, activarOTA: true, almuerzoGuia: 65, desayunoGuia: 35 },
+            reglasGuia: [
+                { desde: 1,  hasta: 3,        valor: 300 },
+                { desde: 4,  hasta: 10,        valor: 450 },
+                { desde: 11, hasta: Infinity,  valor: 600 }
+            ]
+        },
+        {
+            nombre: "Tour Volcán",
+            icono: "🌋",
+            descripcion: "Transporte Mirador + Mirador y sesión de fotos",
+            actividades: [4, 26],
+            dia: 2,
+            config: { utilidad: 15, costoFijo: 3, comisionPOS: 5, otaPerc: 20, activarOTA: true, almuerzoGuia: 65, desayunoGuia: 35 },
+            reglasGuia: [
+                { desde: 1,  hasta: 3,        valor: 300 },
+                { desde: 4,  hasta: Infinity,  valor: 450 }
+            ]
+        },
+        {
+            nombre: "Tour Pueblo",
+            icono: "🏘️",
+            descripcion: "Recorrido calles pintorescas + Visita galería de arte local",
+            actividades: [18, 24],
+            dia: 1,
+            config: { utilidad: 10, costoFijo: 2, comisionPOS: 5, otaPerc: 15, activarOTA: true, almuerzoGuia: 65, desayunoGuia: 0 },
+            reglasGuia: [
+                { desde: 1,  hasta: 3,        valor: 300 },
+                { desde: 4,  hasta: Infinity,  valor: 450 }
+            ]
+        },
+        {
+            nombre: "TOUR DE PESCA ARTESANAL Y EXPERIENCIA GASTRONÓMICA",
+            icono: "🎣",
+            descripcion: "Tour de pesca Artesanal + Servicio de tuk tuk + Experiencia Gastronomico con una familia Local",
+            actividades: [11, 14, 19],
+            dia: 1,
+            config: { utilidad: 12, costoFijo: 2, comisionPOS: 5, otaPerc: 15, activarOTA: true, almuerzoGuia: 65, desayunoGuia: 35 },
+            reglasGuia: [
+                { desde: 1,  hasta: 3,        valor: 300 },
+                { desde: 4,  hasta: Infinity,  valor: 450 }
+            ]
+        },
+        {
+            nombre: "Tour de Tul",
+            icono: "🌿",
+            descripcion: "Tour de Siembra de Tul + Demostración de artesanía con Tul + Refacción",
+            actividades: [12, 13, 15],
+            dia: 1,
+            config: { utilidad: 14, costoFijo: 2, comisionPOS: 5, otaPerc: 15, activarOTA: true, almuerzoGuia: 0, desayunoGuia: 35 },
+            reglasGuia: [
+                { desde: 1,  hasta: 3,        valor: 300 },
+                { desde: 4,  hasta: Infinity,  valor: 450 }
+            ]
+        },
+        {
+            nombre: "Tour 2 (Gastronomía)",
+            icono: "🍽️",
+            descripcion: "Experiencia Gastronómica familiar + Degustación de café",
+            actividades: [19, 9],
+            dia: 1,
+            config: { utilidad: 12, costoFijo: 2, comisionPOS: 5, otaPerc: 10, activarOTA: false, almuerzoGuia: 65, desayunoGuia: 35 },
+            reglasGuia: [
+                { desde: 1,  hasta: 3,        valor: 300 },
+                { desde: 4,  hasta: Infinity,  valor: 450 }
+            ]
+        },
+        {
+            nombre: "Tour 3 (Bienestar)",
+            icono: "🧖",
+            descripcion: "Temazcal + Tour de abejas sin aguijón",
+            actividades: [27, 20],
+            dia: 3,
+            config: { utilidad: 20, costoFijo: 2, comisionPOS: 5, otaPerc: 25, activarOTA: true, almuerzoGuia: 65, desayunoGuia: 0 },
+            reglasGuia: [
+                { desde: 1,  hasta: 3,        valor: 300 },
+                { desde: 4,  hasta: Infinity,  valor: 450 }
+            ]
+        },
+        {
+            nombre: "Tour 4 (San Pedro)",
+            icono: "⛪",
+            descripcion: "Canopy San Pedro La Laguna + Tour San Pedro (Iglesia)",
+            actividades: [32, 33],
+            dia: 4,
+            config: { utilidad: 16, costoFijo: 2, comisionPOS: 5, otaPerc: 18, activarOTA: true, almuerzoGuia: 0, desayunoGuia: 0 },
+            reglasGuia: [
+                { desde: 1,  hasta: 3,        valor: 300 },
+                { desde: 4,  hasta: Infinity,  valor: 450 }
+            ]
+        }
+    ];
+
+    /* ============================================================
+       APLICAR REGLAS DE GUÍA: dado un array de tramos y el pax actual,
+       devuelve el valor correcto del guía general.
+       ============================================================ */
+    function calcGuiaPorReglas(reglas, pax) {
+        for (const t of reglas) {
+            if (pax >= t.desde && pax <= t.hasta) return t.valor;
+        }
+        // Fallback: último tramo
+        return reglas[reglas.length - 1].valor;
+    }
+
+    /* ============================================================
+       CONSTRUIR TEXTO DESCRIPTIVO DE LAS REGLAS (para el modal)
+       Ejemplo: "1-3 pax → Q300 · 4-10 pax → Q450 · 11+ pax → Q600"
+       ============================================================ */
+    function textoReglasGuia(reglas) {
+        return reglas.map(t => {
+            const rango = t.hasta === Infinity ? `${t.desde}+ pax` : `${t.desde}-${t.hasta} pax`;
+            return `${rango} → Q${t.valor}`;
+        }).join(' · ');
+    }
+
+    /* ============================================================
+       CLASIFICAR ACTIVIDAD POR TIPO
+       Retorna: 'transp' | 'food' | 'tour' | 'guia' | 'other'
+       ============================================================ */
+    function getType(text) {
+        text = text.toLowerCase();
+        if (text.includes("transporte") || text.includes("lancha") || text.includes("lacustre") || text.includes("tuk")) return 'transp';
+        if (text.includes("alimentación") || text.includes("desayuno") || text.includes("cena") || text.includes("almuerzo") || text.includes("café") || text.includes("degustación") || text.includes("refacción") || text.includes("gastronóm") || text.includes("gastronomico")) return 'food';
+        if (text.includes("guía") || text.includes("guia")) return 'guia';
+        if (text.includes("tour") || text.includes("ceremonia") || text.includes("temazcal") || text.includes("canopy") || text.includes("demostración") || text.includes("mirador") || text.includes("recorrido") || text.includes("visita") || text.includes("experiencia") || text.includes("siembra") || text.includes("artesania") || text.includes("galería") || text.includes("sesión")) return 'tour';
+        return 'other';
+    }
+
+    function getColor(text) {
+        const t = getType(text);
+        if (t === 'transp') return "var(--c-transp)";
+        if (t === 'food')   return "var(--c-food)";
+        if (t === 'tour')   return "var(--c-tour)";
+        if (t === 'guia')   return "var(--c-guia)";
+        return "var(--c-default)";
+    }
+
+    const TYPE_CONFIG = {
+        selected: { label: '✅ Seleccionadas', cls: 'selected-header' },
+        transp:   { label: '🚤 Transporte',    cls: 'transp-header' },
+        food:     { label: '🍽️ Alimentación',  cls: 'food-header' },
+        tour:     { label: '🗺️ Tours y Experiencias', cls: 'tour-header' },
+        guia:     { label: '🧭 Guías',          cls: 'guia-header' },
+        other:    { label: '📌 Otros',           cls: 'other-header' }
+    };
+
+    /* ============================================================
+       INICIALIZAR SELECTOR DE ACTIVIDADES
+       Orden: seleccionadas primero → luego por tipo
+       ============================================================ */
+    function initSelector() {
+        const container = document.getElementById('selector-container');
+        container.innerHTML = '';
+
+        // Separar seleccionadas vs no seleccionadas
+        const selected = activities.map((a, i) => ({...a, _idx: i})).filter(a => a.day > 0);
+        const unselected = activities.map((a, i) => ({...a, _idx: i})).filter(a => a.day === 0);
+
+        // Agrupar no seleccionadas por tipo
+        const groups = { transp: [], food: [], tour: [], guia: [], other: [] };
+        unselected.forEach(a => { groups[getType(a.d)].push(a); });
+
+        // Renderizar seleccionadas primero
+        if (selected.length > 0) {
+            const hdr = document.createElement('div');
+            hdr.className = `act-section-header selected-header`;
+            hdr.innerHTML = `${TYPE_CONFIG.selected.label} <span style="font-size:10px; color:#10b981;">(${selected.length})</span>`;
+            container.appendChild(hdr);
+            selected.forEach(a => container.appendChild(buildActivityItem(a, a._idx)));
+        }
+
+        // Renderizar grupos de no seleccionadas
+        ['transp','food','tour','guia','other'].forEach(type => {
+            if (groups[type].length === 0) return;
+            const hdr = document.createElement('div');
+            hdr.className = `act-section-header ${TYPE_CONFIG[type].cls}`;
+            hdr.textContent = TYPE_CONFIG[type].label;
+            container.appendChild(hdr);
+            groups[type].forEach(a => container.appendChild(buildActivityItem(a, a._idx)));
+        });
+    }
+
+    function buildActivityItem(act, idx) {
+        const item = document.createElement('div');
+        item.className = 'activity-item' + (act.day > 0 ? ' is-active' : '');
+        item.style.borderLeftColor = getColor(act.d);
+
+        const getActive = (d) => act.day === d ? 'active' : '';
+        const dayBadge = act.day > 0 ? `<span class="active-badge">DÍA ${act.day}</span>` : '';
+        const fixedBadge = act.fixedCost ? `<span class="guia-auto-badge">FIJO</span>` : '';
+        
+        item.innerHTML = `
+            <span class="activity-name">${act.d}${fixedBadge} (Q${act.p})${dayBadge}</span>
+            <div class="day-selector">
+                <button class="day-btn none ${getActive(0)}" onclick="setDay(${idx},0)">✕</button>
+                ${[1,2,3,4].map(d => `<button class="day-btn ${getActive(d)}" onclick="setDay(${idx},${d})">${d}</button>`).join('')}
+            </div>`;
+        return item;
+    }
+
+    /* ============================================================
+       ASIGNAR DÍA A ACTIVIDAD
+       ============================================================ */
+    function setDay(idx, day) {
+        activities[idx].day = day;
+        initSelector();
+        calculate();
+    }
+
+    /* ============================================================
+       ACTUALIZAR GUÍA SEGÚN PAX
+       Usa las reglas del paquete activo, o REGLAS_GUIA_DEFAULT si ninguno.
+       ============================================================ */
+    function updatePax() { 
+        const pax = parseInt(document.getElementById('inPax').value) || 1;
+        const reglas = (paqueteActivo !== null) 
+            ? PAQUETES[paqueteActivo].reglasGuia 
+            : REGLAS_GUIA_DEFAULT;
+        document.getElementById('inGuiaManual').value = calcGuiaPorReglas(reglas, pax);
+        calculate(); 
+    }
+
+    /* ============================================================
+       MODAL DE PAQUETES
+       ============================================================ */
+    function abrirModalPaquetes() {
+        renderizarPaquetes();
+        document.getElementById('modal-paquetes').classList.add('open');
+    }
+    function cerrarModalPaquetes() {
+        document.getElementById('modal-paquetes').classList.remove('open');
+    }
+    document.getElementById('modal-paquetes').addEventListener('click', function(e) {
+        if (e.target === this) cerrarModalPaquetes();
+    });
+
+    function renderizarPaquetes() {
+        const lista = document.getElementById('lista-paquetes');
+        lista.innerHTML = '';
+        PAQUETES.forEach((pkg, i) => {
+            const activo = pkg.actividades.every(idx => activities[idx].day > 0);
+            const btn = document.createElement('button');
+            btn.className = 'paquete-btn' + (activo ? ' selected' : '');
+            const textoAlmuerzo = pkg.config.almuerzoGuia > 0 ? `Almuerzo guía Q${pkg.config.almuerzoGuia}` : `Sin almuerzo guía`;
+            const textoDesayuno = pkg.config.desayunoGuia > 0 ? `Desayuno guía Q${pkg.config.desayunoGuia}` : `Sin desayuno guía`;
+            const textoReglas = textoReglasGuia(pkg.reglasGuia);
+            btn.innerHTML = `
+                <div class="pkg-title">${pkg.icono} ${pkg.nombre} ${activo ? '✅' : ''}</div>
+                <div class="pkg-acts">${pkg.descripcion}</div>
+                <div class="pkg-config">
+                    💜 Utilidad ${pkg.config.utilidad}% · C.Fijo ${pkg.config.costoFijo}% · POS ${pkg.config.comisionPOS}% · OTA ${pkg.config.otaPerc}% ${pkg.config.activarOTA ? '(ON)' : '(OFF)'}
+                </div>
+                <div class="pkg-config-comidas">
+                    🍊 ${textoAlmuerzo} · ${textoDesayuno}
+                </div>
+                <div style="font-size:9px; color:#38bdf8; margin-top:3px; font-style:italic;">
+                    🧭 Guía: ${textoReglas}
+                </div>`;
+            btn.onclick = () => togglePaquete(i);
+            lista.appendChild(btn);
+        });
+    }
+
+    function togglePaquete(pkgIdx) {
+        const pkg = PAQUETES[pkgIdx];
+        const activo = pkg.actividades.every(idx => activities[idx].day > 0);
+        if (activo) {
+            // DESACTIVAR: quitar actividades, restaurar defaults y limpiar paquete activo
+            pkg.actividades.forEach(actIdx => { activities[actIdx].day = 0; });
+            paqueteActivo = null;
+            document.getElementById('inPercI').value        = 10;
+            document.getElementById('inPercF').value        = 2;
+            document.getElementById('inPercPOS').value      = 5;
+            document.getElementById('inOTAPerc').value      = 45;
+            document.getElementById('checkOTA').checked     = true;
+            document.getElementById('inAlmuerzoGuia').value = 65;
+            document.getElementById('inDesayunoGuia').value = 35;
+            // Aplicar regla de guía default al pax actual
+            const pax = parseInt(document.getElementById('inPax').value) || 1;
+            document.getElementById('inGuiaManual').value = calcGuiaPorReglas(REGLAS_GUIA_DEFAULT, pax);
+        } else {
+            // ACTIVAR: asignar actividades, aplicar config y regla de guía del paquete
+            pkg.actividades.forEach(actIdx => { activities[actIdx].day = pkg.dia; });
+            paqueteActivo = pkgIdx;
+            document.getElementById('inPercI').value         = pkg.config.utilidad;
+            document.getElementById('inPercF').value         = pkg.config.costoFijo;
+            document.getElementById('inPercPOS').value       = pkg.config.comisionPOS;
+            document.getElementById('inOTAPerc').value       = pkg.config.otaPerc;
+            document.getElementById('checkOTA').checked      = pkg.config.activarOTA;
+            document.getElementById('inAlmuerzoGuia').value  = pkg.config.almuerzoGuia;
+            document.getElementById('inDesayunoGuia').value  = pkg.config.desayunoGuia;
+            // Aplicar regla de guía del paquete al pax actual
+            const pax = parseInt(document.getElementById('inPax').value) || 1;
+            document.getElementById('inGuiaManual').value = calcGuiaPorReglas(pkg.reglasGuia, pax);
+        }
+        initSelector();
+        calculate();
+        renderizarPaquetes();
+    }
+
+    /* ============================================================
+       CÁLCULO PRINCIPAL
+       ============================================================ */
+    function calculate() {
+        const pax            = parseInt(document.getElementById('inPax').value) || 1;
+        const tc             = parseFloat(document.getElementById('inTC').value) || 7.3;
+        const pFijoP         = parseFloat(document.getElementById('inPercF').value) || 0;
+        const baseFijaManual = parseFloat(document.getElementById('inBaseFija').value) || 0; 
+        const pUtilP         = parseFloat(document.getElementById('inPercI').value) || 0;
+        const pPOSPerc       = parseFloat(document.getElementById('inPercPOS').value) || 0;
+        const pIVA           = parseFloat(document.getElementById('inIVA').value) || 12;
+        const pISR           = parseFloat(document.getElementById('inISR').value) || 5;
+        const checkOTA       = document.getElementById('checkOTA').checked;
+        const showPrices     = document.getElementById('checkShowPrices').checked;
+        const pOTAPerc       = parseFloat(document.getElementById('inOTAPerc').value) || 0;
+        const shouldRound    = document.getElementById('checkRound').checked;
+        const ajusteUSD      = parseFloat(document.getElementById('inAjuste').value) || 0;
+        const montoAjusteGTQ = ajusteUSD * tc;
+        const displayMode    = document.getElementById('currencyDisplay').value;
+
+        // Mostrar regla de guía vigente según paquete activo o default
+        const reglasActivas = (paqueteActivo !== null) ? PAQUETES[paqueteActivo].reglasGuia : REGLAS_GUIA_DEFAULT;
+        const guiaActual = calcGuiaPorReglas(reglasActivas, pax);
+        const pkgNombre = (paqueteActivo !== null) ? ` (${PAQUETES[paqueteActivo].nombre})` : ' (default)';
+        document.getElementById('guia-rule-info').innerHTML = 
+            `📋 ${textoReglasGuia(reglasActivas)}<br><span style="color:#b3ff00">▶ Ahora${pkgNombre}: Q${guiaActual}</span>`;
+
+        // Sumar actividades: fixedCost=true no multiplica por pax
+        let costoActTotal = 0;
+        let ctrlRows = ''; 
+        activities.filter(a => a.day > 0).forEach(a => {
+            const costo = a.fixedCost ? a.p : (a.p * pax);
+            costoActTotal += costo;
+            ctrlRows += `<tr>
+                <td>${a.d}${a.fixedCost ? ' <em style="color:#f59e0b">[fijo]</em>' : ''}</td>
+                <td>${a.fixedCost ? 'FIJO' : `Q${a.p.toFixed(2)}`}</td>
+                <td>Q${costo.toFixed(2)}</td>
+            </tr>`;
+        });
+
+        const guiaExtra         = parseFloat(document.getElementById('inGuiaManual').value) || 0;
+        const lanchaExtra       = parseFloat(document.getElementById('inLancha').value) || 0;
+        const miradorExtraUnit  = parseFloat(document.getElementById('inMirador').value) || 0;
+        const miradorExtraTotal = miradorExtraUnit * pax;
+
+        const almuerzoGuiaRaw    = parseFloat(document.getElementById('inAlmuerzoGuia').value) || 0;
+        const desayunoGuiaRaw    = parseFloat(document.getElementById('inDesayunoGuia').value) || 0;
+        const guiaComidasActivas = pax < 4;
+        const almuerzoGuia       = guiaComidasActivas ? almuerzoGuiaRaw : 0;
+        const desayunoGuia       = guiaComidasActivas ? desayunoGuiaRaw : 0;
+
+        const inAlm  = document.getElementById('inAlmuerzoGuia');
+        const inDes  = document.getElementById('inDesayunoGuia');
+        const lblAlm = document.getElementById('labelAlmuerzoGuia');
+        const lblDes = document.getElementById('labelDesayunoGuia');
+        const warning = document.getElementById('guiaWarning');
+        if (!guiaComidasActivas) {
+            inAlm.classList.add('input-guia-disabled');
+            inDes.classList.add('input-guia-disabled');
+            lblAlm.classList.add('label-guia-disabled');
+            lblDes.classList.add('label-guia-disabled');
+            warning.style.display = 'block';
+        } else {
+            inAlm.classList.remove('input-guia-disabled');
+            inDes.classList.remove('input-guia-disabled');
+            lblAlm.classList.remove('label-guia-disabled');
+            lblDes.classList.remove('label-guia-disabled');
+            warning.style.display = 'none';
+        }
+        
+        const costoBase = costoActTotal + guiaExtra + lanchaExtra + miradorExtraTotal + almuerzoGuia + desayunoGuia;
+        const montoFijo = baseFijaManual * (pFijoP / 100); 
+        const utilidad  = (costoBase + montoFijo + montoAjusteGTQ) * (pUtilP / 100);
+        const subtotalOperativo = costoBase + montoFijo + utilidad + montoAjusteGTQ;
+
+        const ivaEfectivo = (pIVA / (100 + pIVA)); 
+        const isrEfectivo = (pISR / 100) * (1 - ivaEfectivo);
+        const otaFactor   = checkOTA ? (pOTAPerc / 100) : 0;
+        const divisor     = 1 - (ivaEfectivo + isrEfectivo + (pPOSPerc / 100) + otaFactor);
+        
+        let finalGTQ = subtotalOperativo / (divisor || 0.01);
+        let finalUSD = finalGTQ / tc;
+        let diffRedondeoGTQ = 0;
+
+        if (shouldRound) {
+            const roundedUSD_pax = Math.ceil(finalUSD / pax);
+            diffRedondeoGTQ = (roundedUSD_pax * pax * tc) - finalGTQ;
+            finalUSD = roundedUSD_pax * pax;
+            finalGTQ = finalUSD * tc;
+        }
+
+        currentGlobalTotal = finalGTQ;
+
+        const getPriceTag = (valTotal) => {
+            if (!showPrices) return "";
+            if (displayMode === 'usd')  return `<span class="price-tag">$ ${(valTotal/tc).toFixed(2)}</span>`;
+            if (displayMode === 'both') return `<span class="price-tag">Q ${valTotal.toFixed(2)} ($ ${(valTotal/tc).toFixed(2)})</span>`;
+            return `<span class="price-tag">Q ${valTotal.toFixed(2)}</span>`;
+        };
+
+        document.getElementById('v-final-gtq').innerText = finalGTQ.toLocaleString('es-GT', {minimumFractionDigits:2});
+        document.getElementById('v-pax-gtq').innerText   = (finalGTQ/pax).toLocaleString('es-GT', {minimumFractionDigits:2});
+        document.getElementById('v-final-usd').innerText = finalUSD.toLocaleString('en-US', {minimumFractionDigits:shouldRound?0:2});
+        document.getElementById('v-pax-usd').innerText   = (finalUSD/pax).toLocaleString('en-US', {minimumFractionDigits:shouldRound?0:2});
+
+        const resGTQ = document.getElementById('resGTQ');
+        const resUSD = document.getElementById('resUSD');
+        if (displayMode === 'gtq')      { resGTQ.style.display = 'block'; resUSD.style.display = 'none'; }
+        else if (displayMode === 'usd') { resGTQ.style.display = 'none';  resUSD.style.display = 'block'; resUSD.style.borderTop = 'none'; }
+        else                            { resGTQ.style.display = 'block'; resUSD.style.display = 'block'; resUSD.style.borderTop = '1px dashed #ccc'; }
+
+        const auditHTML = `
+            <div class="audit-group">
+                <div class="audit-group-title">1. Costos Directos</div>
+                <div class="audit-item"><span>Costo Actividades:</span><span>Q ${costoActTotal.toFixed(2)}</span></div>
+                <div class="audit-item"><span>Guía General:</span><span>Q ${guiaExtra.toFixed(2)}</span></div>
+                <div class="audit-item"><span>Lancha:</span><span>Q ${lanchaExtra.toFixed(2)}</span></div>
+                <div class="audit-item"><span>Almuerzo Guía:</span><span>Q ${almuerzoGuia.toFixed(2)}</span></div>
+                <div class="audit-item"><span>Desayuno Guía:</span><span>Q ${desayunoGuia.toFixed(2)}</span></div>
+                <div class="audit-item"><span>Mirador:</span><span>Q ${miradorExtraTotal.toFixed(2)}</span></div>
+                <div class="audit-item audit-subtotal"><span>Costo Base Total:</span><span>Q ${costoBase.toFixed(2)}</span></div>
+            </div>
+            <div class="audit-group">
+                <div class="audit-group-title">2. Márgenes y Ajustes</div>
+                <div class="audit-item"><span>C. Fijos (${pFijoP}% de Q${baseFijaManual}):</span><span>Q ${montoFijo.toFixed(2)}</span></div>
+                <div class="audit-item"><span>Utilidad (${pUtilP}%):</span><span>Q ${utilidad.toFixed(2)}</span></div>
+                <div class="audit-item"><span>Ajuste Fijo POS:</span><span>Q ${montoAjusteGTQ.toFixed(2)}</span></div>
+                <div class="audit-item"><span>Factor Redondeo:</span><span>Q ${diffRedondeoGTQ.toFixed(2)}</span></div>
+                <div class="audit-item audit-subtotal"><span>Subtotal Neto:</span><span>Q ${(subtotalOperativo + diffRedondeoGTQ).toFixed(2)}</span></div>
+            </div>
+            <div class="audit-group">
+                <div class="audit-group-title">3. Tributación y Pasarelas</div>
+                <div class="audit-item"><span>IVA:</span><span>Q ${(finalGTQ * ivaEfectivo).toFixed(2)}</span></div>
+                <div class="audit-item"><span>ISR:</span><span>Q ${(finalGTQ * isrEfectivo).toFixed(2)}</span></div>
+                <div class="audit-item"><span>Comisión POS:</span><span>Q ${(finalGTQ * (pPOSPerc / 100)).toFixed(2)}</span></div>
+                ${checkOTA ? `<div class="audit-item" style="color:#3b82f6;"><span>OTAS:</span><span>Q ${(finalGTQ * otaFactor).toFixed(2)}</span></div>` : ''}
+            </div>
+            <div class="audit-group" style="border:none;">
+                <div class="audit-item" style="color:#4739ea; font-weight:bold;"><span>FACTOR DIVISOR:</span><span>${divisor.toFixed(4)}</span></div>
+                <div class="audit-item" style="font-size:13px; font-weight:bold; color:var(--accent); border-top:1px solid #555; margin-top:5px; padding-top:5px;">
+                    <span>VENTA FINAL:</span><span>Q ${finalGTQ.toLocaleString('es-GT', {minimumFractionDigits:2})}</span>
+                </div>
+            </div>`;
+
+        document.getElementById('debug-log').innerHTML = auditHTML;
+        document.getElementById('print-debug-content').innerHTML = auditHTML;
+
+        // Construir itinerario por días
+        let itBody = '';
+        for (let i = 1; i <= 4; i++) {
+            const dayActs = activities.filter(a => a.day === i);
+            let dayList = dayActs.map(a => {
+                const val = a.fixedCost ? a.p : (a.p * pax);
+                return `<li class="act-item"><div>${a.d}</div>${getPriceTag(val)}</li>`;
+            }).join('');
+            
+            if (i === 1) {
+                if (guiaExtra > 0)         dayList += `<li class="act-item" style="color:var(--c-guia);"><div>Guía de Turismo General</div>${getPriceTag(guiaExtra)}</li>`;
+                if (lanchaExtra > 0)       dayList += `<li class="act-item" style="color:var(--c-transp);"><div>Servicio de Lancha Privada</div>${getPriceTag(lanchaExtra)}</li>`;
+                if (miradorExtraTotal > 0) dayList += `<li class="act-item"><div>Ingreso a Mirador</div>${getPriceTag(miradorExtraTotal)}</li>`;
+            }
+
+            if (dayList.length > 0) itBody += `<tr><td style="text-align:center;">DÍA ${i}</td><td><ul>${dayList}</ul></td></tr>`;
+        }
+        document.getElementById('itinerary-preview-body').innerHTML = itBody;
+
+        document.getElementById('outName').innerText = document.getElementById('inClient').value || "---";
+        document.getElementById('outNit').innerText  = document.getElementById('inNit').value || "CF";
+        document.getElementById('outPax').innerText  = pax;
+        document.getElementById('outDate').innerText = new Date().toLocaleDateString('es-GT');
+        
+        const obsValue = document.getElementById('inObs').value;
+        const outObs   = document.getElementById('outObs');
+        if (obsValue) { outObs.innerText = obsValue; outObs.style.display = 'block'; }
+        else          { outObs.style.display = 'none'; }
+        
+        const notaGuia = !guiaComidasActivas 
+            ? `<span style="color:red; font-size:9px;">(no cobrado, pax≥4)</span>` 
+            : '';
+        document.getElementById('control-table-container').innerHTML = `
+            <table>
+                <thead><tr style="background:#eee"><th>Descripción</th><th>C. Unit</th><th>C. Total</th></tr></thead>
+                <tbody>
+                    ${ctrlRows}
+                    <tr><td>Guía General</td><td>-</td><td>Q${guiaExtra.toFixed(2)}</td></tr>
+                    <tr><td>Lancha Privada</td><td>-</td><td>Q${lanchaExtra.toFixed(2)}</td></tr>
+                    <tr><td>Almuerzo Guía ${notaGuia}</td><td>-</td><td>Q${almuerzoGuiaRaw.toFixed(2)}</td></tr>
+                    <tr><td>Desayuno Guía ${notaGuia}</td><td>-</td><td>Q${desayunoGuiaRaw.toFixed(2)}</td></tr>
+                    <tr><td>Mirador</td><td>Q${miradorExtraUnit.toFixed(2)}</td><td>Q${miradorExtraTotal.toFixed(2)}</td></tr>
+                    <tr style="font-weight:bold; background:#f9f9f9;">
+                        <td>VENTA FINAL</td><td>-</td>
+                        <td>Q${finalGTQ.toLocaleString('es-GT', {minimumFractionDigits:2})}</td>
+                    </tr>
+                </tbody>
+            </table>`;
+    }
+
+    /* ============================================================
+       IMPRESIÓN
+       ============================================================ */
+    function imprimirDocumento(tipo) { 
+        const nitInput = document.getElementById('inNit').value.trim().toUpperCase();
+        if (currentGlobalTotal > 2500 && (nitInput === "CF" || nitInput === "")) {
+            alert("⚠️ ALERTA CONTABLE:\n\nMonto superior a Q2,500.00 requiere NIT válido.");
+            document.getElementById('inNit').focus();
+            return;
+        }
+        document.body.className = 'print-' + tipo; 
+        setTimeout(() => window.print(), 200); 
+    }
+
+    /* ============================================================
+       INICIALIZACIÓN
+       ============================================================ */
+    window.onload = () => { 
+        initSelector(); 
+        calculate(); 
+    };
+</script>
+</body>
+</html>
